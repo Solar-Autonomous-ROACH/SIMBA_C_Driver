@@ -1,6 +1,3 @@
-//
-// Created by Tyler Bovenzi on 3/23/23.
-//
 #ifndef ROVERCORE_MMIO_H
 #define ROVERCORE_MMIO_H
 
@@ -12,7 +9,7 @@
 #include <unistd.h>
 
 // Memory address of the I/O register
-#define IOMEM_ADDRESS 0x41200000
+#define IOMEM_ADDRESS 0x80010000
 #define ADDRESS_OFFSET 8
 #define READ_OFFSET 2
 #define WATCHDOG_REG 0x50
@@ -29,4 +26,4 @@ void set_PL_register(uint8_t address, uint8_t value);
 
 uint8_t get_PL_register(uint8_t address);
 
-#endif // ROVERCORE_MMIO_H
+#endif

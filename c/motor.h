@@ -33,4 +33,4 @@ int set_target_position(uint8_t motor_index, long long target_position);
 
 int get_motor_velocity(uint8_t motor_index);
 
-#endif // ROVERCORE_MOTOR_H
+#endif
