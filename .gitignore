@@ -1,1 +1,5 @@
 venv
+*.bit
+*.bin
+*.hwh
+*.o
