@@ -1,4 +1,4 @@
 from pynq import Overlay
 
-ol = Overlay("Kria_BD_wrapper.bit")
+ol = Overlay("bitstream/Kria_BD_wrapper.bit")
 ol.download()
