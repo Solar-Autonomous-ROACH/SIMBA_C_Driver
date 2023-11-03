@@ -27,14 +27,22 @@ int main() {
     printf("mmio is valid\n");
   }
 
-  uint8_t duty_cycle = 127; // 8 bits
-  uint8_t clk_divisor = 4;  // 3 bits
-  uint8_t dir = 0;          // 1 bit
-  uint8_t en = 1;           // 1 bit
+  uint8_t duty_cycle = 0;  // 8 bits
+  uint8_t clk_divisor = 4; // 3 bits
+  uint8_t dir = 1;         // 1 bit
+  uint8_t en = 1;          // 1 bit
 
   *mmio = duty_cycle + (clk_divisor << 8) + (dir << 11) + (en << 12);
 
   while (!done) {
+    for (duty_cycle = 0; duty_cycle < 255 && !done; duty_cycle++) {
+      usleep(50000);
+      *mmio = duty_cycle + (clk_divisor << 8) + (dir << 11) + (en << 12);
+    }
+    for (duty_cycle = 255; duty_cycle > 0 && !done; duty_cycle--) {
+      usleep(50000);
+      *mmio = duty_cycle + (clk_divisor << 8) + (dir << 11) + (en << 12);
+    }
   }
 
   en = 0;
