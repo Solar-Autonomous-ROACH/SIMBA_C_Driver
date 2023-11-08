@@ -1,17 +1,13 @@
 #include "mmio.h"
 
-static volatile unsigned int *mmio;
-static uint8_t *mmio_read;
-
-volatile unsigned int *mmio_init() {
-  int memfd;
-  mmio = 0;
+volatile unsigned int *mmio_init(off_t iomem_address) {
   // Open the /dev/mem device file
-  memfd = open("/dev/mem", O_RDWR | O_SYNC);
+  int memfd = open("/dev/mem", O_RDWR | O_SYNC);
 
   // Map the I/O register to the virtual memory space
-  mmio = mmap(NULL, getpagesize(), PROT_READ | PROT_WRITE, MAP_SHARED, memfd,
-              IOMEM_ADDRESS);
+  volatile unsigned int *mmio =
+      mmap(NULL, getpagesize(), PROT_READ | PROT_WRITE, MAP_SHARED, memfd,
+           iomem_address);
 
   // Close the /dev/mem device file
   close(memfd);
@@ -21,24 +17,12 @@ volatile unsigned int *mmio_init() {
     exit(EXIT_FAILURE);
   }
 
-  mmio_read = (uint8_t *)(mmio + READ_OFFSET);
-
   return (volatile unsigned int *)mmio;
 }
 
-int close_mem() {
+void close_mem(volatile unsigned int *mmio) {
   // Unmap the virtual memory
   munmap((void *)mmio, getpagesize());
-  return 0;
 }
 
-uint8_t mmio_is_valid() { return mmio ? 1 : 0; }
-
-void set_PL_register(uint8_t address, uint8_t value) {
-  *mmio = (address << ADDRESS_OFFSET) + value;
-}
-
-uint8_t get_PL_register(uint8_t address) {
-  *mmio = (address << ADDRESS_OFFSET);
-  return *mmio_read;
-}
+uint8_t mmio_is_valid(volatile unsigned int *mmio) { return mmio ? 1 : 0; }

@@ -10,18 +10,12 @@
 
 // Memory address of the I/O register
 #define IOMEM_ADDRESS 0x80010000
-#define ADDRESS_OFFSET 8
-#define READ_OFFSET 2
 
 // Function prototypes
-volatile unsigned int *mmio_init(void);
+volatile unsigned int *mmio_init(off_t iomem_address);
 
-int close_mem();
+void close_mem(volatile unsigned int *mmio);
 
-uint8_t mmio_is_valid();
-
-void set_PL_register(uint8_t address, uint8_t value);
-
-uint8_t get_PL_register(uint8_t address);
+uint8_t mmio_is_valid(volatile unsigned int *mmio);
 
 #endif

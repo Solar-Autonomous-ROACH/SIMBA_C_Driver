@@ -18,9 +18,9 @@ int main() {
   signal(SIGINT, sigint_handler);
 
   printf("initializing mmio\n");
-  volatile unsigned int *mmio = mmio_init();
+  volatile unsigned int *mmio = mmio_init(IOMEM_ADDRESS);
 
-  if (!mmio_is_valid()) {
+  if (!mmio_is_valid(mmio)) {
     printf("mmio is invalid\n");
     return -1;
   } else {
@@ -57,7 +57,7 @@ int main() {
           (clear_enc << 13) + (en_enc << 14);
 
   printf("closing mmio\n");
-  close_mem();
+  close_mem(mmio);
 
   return 0;
 }
