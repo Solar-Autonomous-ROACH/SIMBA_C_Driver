@@ -1,6 +1,7 @@
 // TEST MMIO GPIO CONTROL
 
 #include "mmio.h"
+#include "pid.h"
 
 #include <signal.h>
 #include <stdbool.h>
@@ -15,8 +16,10 @@ void sigint_handler() {
 }
 
 int main() {
+  // Configure signal handler
   signal(SIGINT, sigint_handler);
 
+  // Initialize mmio
   printf("initializing mmio\n");
   volatile unsigned int *mmio = mmio_init(IOMEM_ADDRESS);
 
@@ -27,6 +30,7 @@ int main() {
     printf("mmio is valid\n");
   }
 
+  // Initialize motor controller
   uint8_t duty_cycle = 0;  // 8 bits
   uint8_t clk_divisor = 4; // 3 bits
   uint8_t dir = 1;         // 1 bit
@@ -38,30 +42,53 @@ int main() {
           (clear_enc << 13) + (en_enc << 14);
 
   clear_enc = 0;
+  // REMOVE
+  *mmio = duty_cycle + (clk_divisor << 8) + (dir << 11) + (en_motor << 12) +
+          (clear_enc << 13) + (en_enc << 14);
 
+  // Initialize PID controller
+  PIDController pid;
+  pid.Kp = 1.0;
+  pid.Ki = 0.0;
+  pid.Kd = 0.0;
+  pid.tau = 0.02;
+  pid.outputLimitMin = -255.0;
+  pid.outputLimitMax = 255.0;
+  pid.integratorLimitMin = 0.0;
+  pid.integratorLimitMax = 0.0;
+  pid.sampleTime = 0.005;
+
+  PIDController_init(&pid);
+
+  double setpoint = 0.0;
+
+  // PID control loop
   while (!done) {
-    for (duty_cycle = 0; duty_cycle < 255 && !done; duty_cycle++) {
-      usleep(50000);
-      *mmio = duty_cycle + (clk_divisor << 8) + (dir << 11) + (en_motor << 12) +
-              (clear_enc << 13) + (en_enc << 14);
-      printf("enc: %d\n", *(mmio + 2));
-    }
-    for (duty_cycle = 255; duty_cycle > 0 && !done; duty_cycle--) {
-      usleep(50000);
-      *mmio = duty_cycle + (clk_divisor << 8) + (dir << 11) + (en_motor << 12) +
-              (clear_enc << 13) + (en_enc << 14);
-      printf("enc: %d\n", *(mmio + 2));
-    }
+    // Read the encoder
+    uint16_t counts = *(mmio + 2);
+    double measurement = (double)counts;
 
-    dir = !dir;
+    // Compute control signal
+    PIDController_update(&pid, setpoint, measurement);
+
+    // Apply control signal
+    //*mmio = duty_cycle + (clk_divisor << 8) + (dir << 11) + (en_motor << 12) +
+    //(clear_enc << 13) + (en_enc << 14);
+
+    printf("PID: meas %f, out %f\n", measurement, pid.output);
+
+    // Delay the loop
+    usleep(5000);
   }
 
+  // Close motor controller
   en_motor = 0;
   en_enc = 0;
 
   *mmio = duty_cycle + (clk_divisor << 8) + (dir << 11) + (en_motor << 12) +
           (clear_enc << 13) + (en_enc << 14);
 
+  // Close mmio
   printf("closing mmio\n");
   close_mem(mmio);
 
