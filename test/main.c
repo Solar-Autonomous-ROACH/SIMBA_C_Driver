@@ -42,13 +42,16 @@ int main() {
       usleep(50000);
       *mmio = duty_cycle + (clk_divisor << 8) + (dir << 11) + (en_motor << 12) +
               (clear_enc << 13) + (en_enc << 14);
-      printf("enc: %d\n", *mmio);
+      printf("enc: %d\n", *(mmio + 2));
     }
     for (duty_cycle = 255; duty_cycle > 0 && !done; duty_cycle--) {
       usleep(50000);
       *mmio = duty_cycle + (clk_divisor << 8) + (dir << 11) + (en_motor << 12) +
               (clear_enc << 13) + (en_enc << 14);
+      printf("enc: %d\n", *(mmio + 2));
     }
+
+    dir = !dir;
   }
 
   en_motor = 0;
