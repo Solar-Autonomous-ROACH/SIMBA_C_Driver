@@ -3,6 +3,7 @@
 #include "mmio.h"
 #include "pid.h"
 
+#include <math.h>
 #include <signal.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -42,9 +43,6 @@ int main() {
           (clear_enc << 13) + (en_enc << 14);
 
   clear_enc = 0;
-  // REMOVE
-  *mmio = duty_cycle + (clk_divisor << 8) + (dir << 11) + (en_motor << 12) +
-          (clear_enc << 13) + (en_enc << 14);
 
   // Initialize PID controller
   PIDController pid;
@@ -63,19 +61,26 @@ int main() {
   double setpoint = 0.0;
 
   // PID control loop
+  int64_t counts = 0;
+  int16_t prevCount;
+  int16_t currCount;
   while (!done) {
     // Read the encoder
-    uint16_t counts = *(mmio + 2);
-    double measurement = (double)counts;
+    currCount = *(mmio + 2);
+    counts += currCount - prevCount;
+    prevCount = currCount;
 
     // Compute control signal
-    PIDController_update(&pid, setpoint, measurement);
+    PIDController_update(&pid, setpoint, (double)counts);
 
     // Apply control signal
-    //*mmio = duty_cycle + (clk_divisor << 8) + (dir << 11) + (en_motor << 12) +
-    //(clear_enc << 13) + (en_enc << 14);
+    dir = pid.output >= 0 ? 1 : 0;
+    duty_cycle = (uint8_t)fabs(pid.output);
+    *mmio = duty_cycle + (clk_divisor << 8) + (dir << 11) + (en_motor << 12) +
+            (clear_enc << 13) + (en_enc << 14);
 
-    printf("PID: meas %f, out %f\n", measurement, pid.output);
+    printf("PID: meas %f, out %f, dir %d, duty %d\n", (double)counts,
+           pid.output, dir, duty_cycle);
 
     // Delay the loop
     usleep(5000);
