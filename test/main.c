@@ -79,8 +79,8 @@ int main() {
     *mmio = duty_cycle + (clk_divisor << 8) + (dir << 11) + (en_motor << 12) +
             (clear_enc << 13) + (en_enc << 14);
 
-    printf("PID: meas %f, out %f, dir %d, duty %d\n", (double)counts,
-           pid.output, dir, duty_cycle);
+    printf("PID: meas %f, out %f, dir %d, duty %d, set %f\n", (double)counts,
+           pid.output, dir, duty_cycle, setpoint);
 
     // Delay the loop
     usleep(5000);
