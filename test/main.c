@@ -46,19 +46,21 @@ int main() {
 
   // Initialize PID controller
   PIDController pid;
-  pid.Kp = 1.0;
-  pid.Ki = 0.0;
-  pid.Kd = 0.0;
-  pid.tau = 0.02;
+  pid.Kp = 15.0;
+  pid.Ki = 30.0;
+  pid.Kd = 2.0;
+  pid.tau = 0.04;
   pid.outputLimitMin = -255.0;
   pid.outputLimitMax = 255.0;
-  pid.integratorLimitMin = 0.0;
-  pid.integratorLimitMax = 0.0;
+  pid.integratorLimitMin = -20.0;
+  pid.integratorLimitMax = 20.0;
   pid.sampleTime = 0.005;
 
   PIDController_init(&pid);
 
-  double setpoint = 0.0;
+  double setpoint = 500.0;
+
+  sleep(5);
 
   // PID control loop
   int64_t counts = 0;
