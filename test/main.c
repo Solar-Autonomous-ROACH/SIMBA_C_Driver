@@ -58,9 +58,8 @@ int main() {
 
   PIDController_init(&pid);
 
-  double setpoint = 500.0;
-
-  sleep(5);
+  double setpoint = 0.0;
+  double angle = 0;
 
   // PID control loop
   int64_t counts = 0;
@@ -83,6 +82,10 @@ int main() {
 
     printf("PID: meas %f, out %f, dir %d, duty %d, set %f\n", (double)counts,
            pid.output, dir, duty_cycle, setpoint);
+
+    // Update the setpoint
+    angle += 0.5;
+    setpoint = 500.0 * sin(angle * M_PI / 180.0);
 
     // Delay the loop
     usleep(5000);

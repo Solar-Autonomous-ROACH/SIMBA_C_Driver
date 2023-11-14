@@ -18,7 +18,7 @@ all: $(TARGET)
 
 # Link the program
 $(TARGET): $(OBJS)
-	$(CC) $(CFLAGS) $(OBJS) -o $(TARGET)
+	$(CC) $(CFLAGS) $(OBJS) -lm -o $(TARGET)
 
 # Compile the C source files
 %.o: %.c
