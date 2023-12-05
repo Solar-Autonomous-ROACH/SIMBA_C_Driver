@@ -2,6 +2,7 @@
 
 #include "motor.h"
 #include "pid.h"
+#include "rover.h"
 
 #include <math.h>
 #include <signal.h>
@@ -23,7 +24,7 @@ int main() {
 
   // Setup motor controller
   MotorController motor;
-  if (MotorController_init(&motor, 0x80010000) != 0) {
+  if (MotorController_init(&motor, MOTOR_REAR_LEFT_WHEEL) != 0) {
     printf("failed to initialize motor controller\n");
     return -1;
   }
