@@ -8,9 +8,6 @@
 #include <sys/mman.h>
 #include <unistd.h>
 
-// Memory address of the I/O register
-#define IOMEM_ADDRESS 0x80010000
-
 // Function prototypes
 volatile unsigned int *mmio_init(off_t iomem_address);
 
