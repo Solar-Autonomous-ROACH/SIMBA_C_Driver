@@ -1,11 +1,12 @@
 // TEST MMIO GPIO CONTROL
 
-#include "mmio.h"
+#include "motor.h"
 #include "pid.h"
 
 #include <math.h>
 #include <signal.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <unistd.h>
 
@@ -20,29 +21,12 @@ int main() {
   // Configure signal handler
   signal(SIGINT, sigint_handler);
 
-  // Initialize mmio
-  printf("initializing mmio\n");
-  volatile unsigned int *mmio = mmio_init(IOMEM_ADDRESS);
-
-  if (!mmio_is_valid(mmio)) {
-    printf("mmio is invalid\n");
+  // Setup motor controller
+  MotorController motor;
+  if (MotorController_init(&motor, 0x80010000) != 0) {
+    printf("failed to initialize motor controller\n");
     return -1;
-  } else {
-    printf("mmio is valid\n");
   }
-
-  // Initialize motor controller
-  uint8_t duty_cycle = 0;  // 8 bits
-  uint8_t clk_divisor = 4; // 3 bits
-  uint8_t dir = 1;         // 1 bit
-  uint8_t en_motor = 1;    // 1 bit
-  uint8_t clear_enc = 1;   // 1 bit
-  uint8_t en_enc = 1;      // 1 bit
-
-  *mmio = duty_cycle + (clk_divisor << 8) + (dir << 11) + (en_motor << 12) +
-          (clear_enc << 13) + (en_enc << 14);
-
-  clear_enc = 0;
 
   // Initialize PID controller
   PIDController pid;
@@ -63,25 +47,23 @@ int main() {
 
   // PID control loop
   int64_t counts = 0;
-  int16_t prevCount;
-  int16_t currCount;
+  int16_t prevCount = 0;
   while (!done) {
     // Read the encoder
-    currCount = *(mmio + 2);
-    counts += currCount - prevCount;
-    prevCount = currCount;
+    MotorController_read(&motor);
+    counts += motor.counts - prevCount;
+    prevCount = motor.counts;
 
     // Compute control signal
     PIDController_update(&pid, setpoint, (double)counts);
 
     // Apply control signal
-    dir = pid.output >= 0 ? 1 : 0;
-    duty_cycle = (uint8_t)fabs(pid.output);
-    *mmio = duty_cycle + (clk_divisor << 8) + (dir << 11) + (en_motor << 12) +
-            (clear_enc << 13) + (en_enc << 14);
+    motor.dir = pid.output >= 0 ? 0 : 1;
+    motor.duty_cycle = (uint8_t)fabs(pid.output);
+    MotorController_write(&motor);
 
     printf("PID: meas %f, out %f, dir %d, duty %d, set %f\n", (double)counts,
-           pid.output, dir, duty_cycle, setpoint);
+           pid.output, motor.dir, motor.duty_cycle, setpoint);
 
     // Update the setpoint
     angle += 0.5;
@@ -92,15 +74,7 @@ int main() {
   }
 
   // Close motor controller
-  en_motor = 0;
-  en_enc = 0;
-
-  *mmio = duty_cycle + (clk_divisor << 8) + (dir << 11) + (en_motor << 12) +
-          (clear_enc << 13) + (en_enc << 14);
-
-  // Close mmio
-  printf("closing mmio\n");
-  close_mem(mmio);
+  MotorController_close(&motor);
 
   return 0;
 }

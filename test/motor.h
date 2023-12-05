@@ -1,10 +1,13 @@
 #ifndef MOTOR_H
 #define MOTOR_H
 
+#include <aio.h>
+#include <stdint.h>
+
 typedef struct {
 
-  // MMIO Address
-  off_t mmio_address;
+  // MMIO
+  volatile unsigned int *mmio;
 
   // GPIO Output Control Signals
   uint8_t duty_cycle;  // 8 bits

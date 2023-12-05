@@ -1,3 +1,6 @@
+#include <aio.h>
+
+#include "mmio.h"
 #include "motor.h"
 
 int MotorController_init(MotorController *motor, off_t mmio_address) {
@@ -36,8 +39,9 @@ void MotorController_close(MotorController *motor) {
 
 void MotorController_write(MotorController *motor) {
   // Write to MMIO
-  *(motor->mmio) = duty_cycle + (clk_divisor << 8) + (dir << 11) +
-                   (en_motor << 12) + (clear_enc << 13) + (en_enc << 14);
+  *(motor->mmio) = motor->duty_cycle + (motor->clk_divisor << 8) +
+                   (motor->dir << 11) + (motor->en_motor << 12) +
+                   (motor->clear_enc << 13) + (motor->en_enc << 14);
 }
 
 void MotorController_read(MotorController *motor) {
