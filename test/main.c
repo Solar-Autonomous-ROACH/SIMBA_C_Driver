@@ -98,9 +98,9 @@ int main() {
     tiny_setpoint = 250.0 * sin(angle * M_PI / 180.0);
 
     servo0.setpoint = setpoint;
-    servo1.setpoint = setpoint;
+    servo1.setpoint = -setpoint;
     servo2.setpoint = setpoint;
-    servo3.setpoint = setpoint;
+    servo3.setpoint = -setpoint;
     servo4.setpoint = setpoint;
     servo5.setpoint = tiny_setpoint;
     servo6.setpoint = tiny_setpoint;
