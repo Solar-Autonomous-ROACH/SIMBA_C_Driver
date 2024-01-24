@@ -27,4 +27,7 @@ void Servo_close(Servo *servo);
 
 void Servo_update(Servo *servo);
 
+#define NUM_MOTORS 15
+Servo servos[NUM_MOTORS];
+
 #endif

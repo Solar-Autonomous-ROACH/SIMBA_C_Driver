@@ -39,8 +39,4 @@ int rover_move_x(int distance);
 int rover_move_y(int distance);
 int rover_rotate(int dir, int angle);
 
-#include "servo.h"
-#define NUM_MOTORS 15
-Servo servos[NUM_MOTORS];
-
 #endif

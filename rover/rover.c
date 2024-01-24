@@ -10,21 +10,11 @@
 #include <stdio.h>
 #include <unistd.h>
 
-static bool done = false;
-
-void sigint_handler() {
-  printf("SIGINT caught\n");
-  done = true;
-}
-
 /**
  * @brief the rover.
  * @return 0 on success, nonzero on failure
 */
 int rover_init() {
-    // Configure signal handler
-   signal(SIGINT, sigint_handler);
-
     // define servos and motors
     int motor_addrs[NUM_MOTORS] = {
         MOTOR_REAR_RIGHT_WHEEL,
