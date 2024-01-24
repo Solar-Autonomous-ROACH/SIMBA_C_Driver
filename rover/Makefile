@@ -11,7 +11,7 @@ SRCS = main.c mmio.c pid.c motor.c servo.c rover.c isr.c
 OBJS = $(SRCS:.c=.o)
 
 # Executable file
-TARGET = test
+TARGET = rover
 
 # Compile Everything
 all: $(TARGET)

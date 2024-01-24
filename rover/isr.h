@@ -1,7 +1,9 @@
 #ifndef ROVERCORE_ISR_H
 #define ROVERCORE_ISR_H
 
-int isr_init();
+#include "servo.h"
+
+int isr_init(Servo* rover_servos);
 
 int isr();
 

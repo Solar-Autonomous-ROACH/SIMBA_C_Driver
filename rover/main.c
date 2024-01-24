@@ -1,6 +1,6 @@
 // TEST MMIO GPIO CONTROL
-#include "rover.h"
 #include "servo.h"
+#include "rover.h"
 
 #include <math.h>
 #include <signal.h>

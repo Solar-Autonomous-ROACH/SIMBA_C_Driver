@@ -10,6 +10,8 @@
 #include <stdio.h>
 #include <unistd.h>
 
+Servo servos[NUM_MOTORS];
+
 /**
  * @brief the rover.
  * @return 0 on success, nonzero on failure
@@ -44,7 +46,7 @@ int rover_init() {
     }
 
     // setup isr
-    if (isr_init() != 0) {
+    if (isr_init(servos) != 0) {
         printf("failed to initialize isr\n");
         return -1;
     }

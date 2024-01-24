@@ -39,4 +39,6 @@ int rover_move_x(int distance);
 int rover_move_y(int distance);
 int rover_rotate(int dir, int angle);
 
+#define NUM_MOTORS 15
+
 #endif
