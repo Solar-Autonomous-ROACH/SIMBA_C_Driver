@@ -1,7 +1,6 @@
 // TEST MMIO GPIO CONTROL
-#include "servo.h"
 #include "rover.h"
-
+#include "servo.h"
 #include <math.h>
 #include <signal.h>
 #include <stdbool.h>
@@ -26,7 +25,12 @@ int main() {
     return -1;
   }
 
+  // infinite loop
+  while (done == false) {
+  }
+
   // Close Rover
+  printf("disabling rover...\n");
   if (rover_close() != 0) {
     printf("failed to close rover\n");
     return -1;

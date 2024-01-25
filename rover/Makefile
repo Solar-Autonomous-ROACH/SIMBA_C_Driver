@@ -2,10 +2,10 @@
 
 # Compiler options
 CC = gcc
-CFLAGS = -Wall -Wextra -Werror
+CFLAGS = -Wall -Wextra -Werror -g
 
 # Source files
-SRCS = main.c mmio.c pid.c motor.c servo.c rover.c isr.c
+SRCS = main.c mmio.c pid.c motor.c servo.c rover.c
 
 # Object files
 OBJS = $(SRCS:.c=.o)

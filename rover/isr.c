@@ -1,7 +1,7 @@
 #include "isr.h"
 #include "mmio.h"
-#include "servo.h"
 #include "rover.h"
+#include "servo.h"
 
 #include <math.h>
 #include <signal.h>
@@ -10,16 +10,9 @@
 #include <sys/time.h>
 #include <unistd.h>
 
-Servo servos[NUM_MOTORS];
-
-int isr_init(Servo* rover_servos) {
+int isr_init() {
   struct sigaction sa;
   struct itimerval timer;
-
-  // Initialize servos
-  for (int i = 0; i < NUM_MOTORS; i++) {
-    servos[i] = rover_servos[i];
-  }
 
   // Install the ISR
   sa.sa_handler = (void *)isr;
