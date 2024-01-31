@@ -30,11 +30,12 @@ int main() {
   }
 
   // Close Rover
-  printf("disabling rover...\n");
   if (rover_close() != 0) {
     printf("failed to close rover\n");
     return -1;
   }
 
+  // testing
+  // motor_set_speed(0, 0);
   return 0;
 }
