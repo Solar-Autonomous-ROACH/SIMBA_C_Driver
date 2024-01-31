@@ -23,9 +23,13 @@
 #define MOTOR_ELBOW 0x800C0000
 #define MOTOR_CLAW 0x800D0000
 
+#define WATCHDOG_REG 0x80100000
+
+/*
 #define MOTOR_15 0x800E0000
 #define MOTOR_16 0x800F0000
 #define MOTOR_17 0x80100000
+*/
 
 /* API functions */
 // Initializes the rover. Return 0 on success, nonzero on failure
@@ -40,7 +44,6 @@ int rover_rotate(int dir, int angle);
 
 /* for isr */
 int isr_init();
-
 int isr();
 
 #endif

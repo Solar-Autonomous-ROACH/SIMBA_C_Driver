@@ -1,6 +1,7 @@
 // Rover Control API
 #include "rover.h"
 #include "isr.h"
+#include "mmio.h"
 #include "servo.h"
 
 #include <math.h>
@@ -12,10 +13,23 @@
 
 #define NUM_MOTORS 15
 Servo servos[NUM_MOTORS];
+double servo_speeds[NUM_MOTORS];
+volatile unsigned int *watchdog_flag;
 
 double angle = 0;
 double setpoint = 0;
 double tiny_setpoint = 0;
+
+/* API functions */
+// Sets the target motor speed. Return 0 on success, nonzero on failure
+int motor_set_speed(int motor_addr, int speed) {
+  // find the servo that is associated with the motor_addr
+  printf("%d%d\n", motor_addr, speed);
+  for (int i = 0; i < NUM_MOTORS; i++) {
+    printf("0x%p\n", servos[i].motor.mmio);
+  }
+  return 0;
+}
 
 int isr_init() {
   struct sigaction sa;
@@ -39,16 +53,16 @@ int isr_init() {
   //   set_motor_speed(i, 0);
   // }
 
+  // Handle watchdog
+  watchdog_flag = mmio_init((off_t)WATCHDOG_REG);
+
   return 0;
 }
 
 // PID Control
 int isr() {
-  // TODO
   // Handle watchdog
-  // static uint8_t watchdog_flag = 0;
-  // set_PL_register(WATCHDOG_REG, watchdog_flag);
-  // watchdog_flag = !watchdog_flag;
+  *(watchdog_flag) = *(watchdog_flag) ? 0 : 1;
 
   // Update servos
   for (int i = 0; i < 10; i++) {
@@ -82,13 +96,9 @@ int rover_init() {
   // define servos and motors
   off_t motor_addrs[NUM_MOTORS] = {
       MOTOR_REAR_LEFT_WHEEL,   MOTOR_REAR_RIGHT_WHEEL,
-
       MOTOR_MIDDLE_LEFT_WHEEL, MOTOR_MIDDLE_RIGHT_WHEEL,
-
       MOTOR_FRONT_LEFT_WHEEL,  MOTOR_FRONT_RIGHT_WHEEL,
-
       MOTOR_FRONT_LEFT_STEER,  MOTOR_FRONT_RIGHT_STEER,
-
       MOTOR_REAR_LEFT_STEER,   MOTOR_REAR_RIGHT_STEER,
 
       // MOTOR_WRIST,
@@ -100,6 +110,9 @@ int rover_init() {
 
   // setup servos
   for (int i = 0; i < 10; i++) {
+    // setting servo speeds to zero
+    servo_speeds[i] = 0;
+    // initializing servos
     if (Servo_init(&servos[i], motor_addrs[i]) != 0) {
       printf("failed to initialize servo%d\n", i);
       return -1;
