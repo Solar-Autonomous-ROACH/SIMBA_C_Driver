@@ -22,13 +22,17 @@ double tiny_setpoint = 0;
 
 /* API functions */
 // Sets the target motor speed. Return 0 on success, nonzero on failure
-int motor_set_speed(int motor_addr, int speed) {
+int motor_set_speed(off_t motor_addr, int speed) {
   // find the servo that is associated with the motor_addr
-  printf("%d%d\n", motor_addr, speed);
+  printf("0x%lx, %d\n", motor_addr, speed);
   for (int i = 0; i < NUM_MOTORS; i++) {
-    printf("0x%p\n", servos[i].motor.mmio);
+    printf("0x%lx\n", servos[i].motor.addr);
+    if (motor_addr == servos[i].motor.addr) {
+      printf("found servo[%d] = %lx\n", i, servos[i].motor.addr);
+      return 0;
+    }
   }
-  return 0;
+  return -1;
 }
 
 int isr_init() {

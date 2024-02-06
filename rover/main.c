@@ -18,7 +18,6 @@ void sigint_handler() {
 int main() {
   // Configure signal handler
   signal(SIGINT, sigint_handler);
-
   // Initialize rover
   if (rover_init() != 0) {
     printf("failed to initialize rover\n");
@@ -36,6 +35,6 @@ int main() {
   }
 
   // testing
-  // motor_set_speed(0, 0);
+  motor_set_speed(MOTOR_MIDDLE_RIGHT_WHEEL, 0);
   return 0;
 }

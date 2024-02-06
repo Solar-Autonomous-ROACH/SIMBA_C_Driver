@@ -2,6 +2,8 @@
 #ifndef ROVER_H
 #define ROVER_H
 
+#include <stdlib.h>
+
 /* Define the Rover's Motors */
 #define MOTOR_REAR_RIGHT_STEER 0x80000000
 #define MOTOR_REAR_RIGHT_WHEEL 0x80010000
@@ -36,7 +38,7 @@
 int rover_init();
 int rover_close();
 // Sets the target motor speed. Return 0 on success, nonzero on failure
-int motor_set_speed(int motor_addr, int speed);
+int motor_set_speed(off_t motor_addr, int speed);
 // Rover control. Return 0 on success, nonzero on failure
 int rover_move_x(int distance);
 int rover_move_y(int distance);

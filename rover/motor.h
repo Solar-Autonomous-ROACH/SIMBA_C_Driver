@@ -8,6 +8,8 @@ typedef struct {
 
   // MMIO
   volatile unsigned int *mmio;
+  // ADDR - defined for each motor in rover.h
+  off_t addr;
 
   // GPIO Output Control Signals
   uint8_t duty_cycle;  // 8 bits
