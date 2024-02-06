@@ -12,27 +12,71 @@
 #include <unistd.h>
 
 #define NUM_MOTORS 15
+#define ISR_DELAY 5000           // in usec
+#define DEFAULT_MOTOR_SPEED 1000 // in encoder positions per second
+
 Servo servos[NUM_MOTORS];
-double servo_speeds[NUM_MOTORS];
 volatile unsigned int *watchdog_flag;
 
-double angle = 0;
-double setpoint = 0;
-double tiny_setpoint = 0;
-
 /* API functions */
-// Sets the target motor speed. Return 0 on success, nonzero on failure
-int motor_set_speed(off_t motor_addr, int speed) {
+/* Sets the target motor speed.
+ * off_t motor_addr: the motor address defined in rover.h
+ * int64_t speed: the speed to set the motor in encoder positions per second
+ * Return 0 on success, nonzero on failure
+ **/
+int motor_set_speed(off_t motor_addr, int64_t speed) {
+  // given the speed in counts/second, calculate how many counts per isr run
+  int counts_per_second = (double)speed * (double)(ISR_DELAY)*1e-6;
   // find the servo that is associated with the motor_addr
-  printf("0x%lx, %d\n", motor_addr, speed);
   for (int i = 0; i < NUM_MOTORS; i++) {
-    printf("0x%lx\n", servos[i].motor.addr);
     if (motor_addr == servos[i].motor.addr) {
-      printf("found servo[%d] = %lx\n", i, servos[i].motor.addr);
+      servos[i].speed = counts_per_second;
       return 0;
     }
   }
   return -1;
+}
+
+/* Moves the rover forward some distance in +x and backwards in -x distance
+ * dist: the distance to move in encoder positions
+ * returns 0 on success, otherwise the number of motors that failed to be
+ *updated
+ **/
+int rover_move_x(int64_t dist) {
+  int count = 6;
+  for (int i = 0; i < NUM_MOTORS; i++) {
+    switch (servos[i].motor.addr) {
+    case MOTOR_REAR_RIGHT_WHEEL:
+    case MOTOR_FRONT_RIGHT_WHEEL:
+    case MOTOR_MIDDLE_RIGHT_WHEEL:
+      servos[i].setpoint += dist;
+      count--;
+      break;
+    // inverted motors.
+    case MOTOR_REAR_LEFT_WHEEL:
+    case MOTOR_FRONT_LEFT_WHEEL:
+    case MOTOR_MIDDLE_LEFT_WHEEL:
+      servos[i].setpoint -= dist;
+      count--;
+      break;
+    default:
+      break;
+    }
+  }
+  return count;
+}
+
+/*  Return a status that if the rover is currently moving or not.
+ * return 1 if done, 0 if any motor is still moving
+ * FIXME: will not work because motors are busted!!!
+ **/
+int check_rover_done() {
+  for (int i = 0; i < 10; i++) {
+    if (servos[i].setpoint != servos[i].counts) {
+      return 0;
+    }
+  }
+  return 1;
 }
 
 int isr_init() {
@@ -47,15 +91,10 @@ int isr_init() {
 
   // Set the timer to trigger every 1ms
   timer.it_interval.tv_sec = 0;
-  timer.it_interval.tv_usec = 5000; // was 1000
+  timer.it_interval.tv_usec = ISR_DELAY;
   timer.it_value.tv_sec = 0;
-  timer.it_value.tv_usec = 5000; // was 1000
+  timer.it_value.tv_usec = ISR_DELAY;
   setitimer(ITIMER_REAL, &timer, NULL);
-
-  // // Stop all motors
-  // for (int i = 0; i < 14; i++) {
-  //   set_motor_speed(i, 0);
-  // }
 
   // Handle watchdog
   watchdog_flag = mmio_init((off_t)WATCHDOG_REG);
@@ -73,21 +112,10 @@ int isr() {
     Servo_update(&servos[i]);
   }
 
-  // Update the setpoint
-  angle += 0.5;
-  setpoint = 500.0 * sin(angle * M_PI / 180.0);
-  tiny_setpoint = 250.0 * sin(angle * M_PI / 180.0);
-
-  servos[0].setpoint = setpoint;
-  servos[1].setpoint = -setpoint;
-  servos[2].setpoint = setpoint;
-  servos[3].setpoint = -setpoint;
-  servos[4].setpoint = setpoint;
-  servos[5].setpoint = -setpoint;
-  servos[6].setpoint = tiny_setpoint;
-  servos[7].setpoint = tiny_setpoint;
-  servos[8].setpoint = tiny_setpoint;
-  servos[9].setpoint = tiny_setpoint;
+  // Update the setpoitns
+  for (int i = 0; i < NUM_MOTORS; i++) {
+    servos[i].setpoint += servos[i].speed;
+  }
 
   return 0;
 }
@@ -114,10 +142,8 @@ int rover_init() {
 
   // setup servos
   for (int i = 0; i < 10; i++) {
-    // setting servo speeds to zero
-    servo_speeds[i] = 0;
     // initializing servos
-    if (Servo_init(&servos[i], motor_addrs[i]) != 0) {
+    if (Servo_init(&servos[i], motor_addrs[i], false) != 0) {
       printf("failed to initialize servo%d\n", i);
       return -1;
     }

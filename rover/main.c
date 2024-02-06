@@ -24,6 +24,10 @@ int main() {
     return -1;
   }
 
+  // testing
+  // motor_set_speed(MOTOR_MIDDLE_LEFT_WHEEL, 1000);
+  rover_move_x(10000);
+
   // infinite loop
   while (done == false) {
   }
@@ -34,7 +38,5 @@ int main() {
     return -1;
   }
 
-  // testing
-  motor_set_speed(MOTOR_MIDDLE_RIGHT_WHEEL, 0);
   return 0;
 }

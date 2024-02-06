@@ -30,7 +30,7 @@ int Servo_init(Servo *servo, off_t mmio_address, bool inverted) {
   servo->setpoint = 0;
   servo->counts = 0;
   servo->prevCounts = 0;
-  // FIXME: inverted servo motor functionality does not work with pid
+  //FIXME: inverted servo motor functionality does not work with pid
   servo->inverted = inverted;
   servo->speed = 0;
 
