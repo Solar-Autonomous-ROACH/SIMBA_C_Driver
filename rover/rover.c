@@ -1,0 +1,169 @@
+// Rover Control API
+#include "rover.h"
+#include "isr.h"
+#include "mmio.h"
+#include "servo.h"
+
+#include <math.h>
+#include <signal.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <unistd.h>
+
+#define NUM_MOTORS 15
+#define ISR_DELAY 5000           // in usec
+#define DEFAULT_MOTOR_SPEED 1000 // in encoder positions per second
+
+Servo servos[NUM_MOTORS];
+volatile unsigned int *watchdog_flag;
+
+/* API functions */
+/* Sets the target motor speed.
+ * off_t motor_addr: the motor address defined in rover.h
+ * int64_t speed: the speed to set the motor in encoder positions per second
+ * Return 0 on success, nonzero on failure
+ **/
+int motor_set_speed(off_t motor_addr, int64_t speed) {
+  // given the speed in counts/second, calculate how many counts per isr run
+  int counts_per_second = (double)speed * (double)(ISR_DELAY)*1e-6;
+  // find the servo that is associated with the motor_addr
+  for (int i = 0; i < NUM_MOTORS; i++) {
+    if (motor_addr == servos[i].motor.addr) {
+      servos[i].speed = counts_per_second;
+      return 0;
+    }
+  }
+  return -1;
+}
+
+/* Moves the rover forward some distance in +x and backwards in -x distance
+ * dist: the distance to move in encoder positions
+ * returns 0 on success, otherwise the number of motors that failed to be
+ *updated
+ **/
+int rover_move_x(int64_t dist) {
+  int count = 6;
+  for (int i = 0; i < NUM_MOTORS; i++) {
+    switch (servos[i].motor.addr) {
+    case MOTOR_REAR_RIGHT_WHEEL:
+    case MOTOR_FRONT_RIGHT_WHEEL:
+    case MOTOR_MIDDLE_RIGHT_WHEEL:
+      servos[i].setpoint += dist;
+      count--;
+      break;
+    // inverted motors.
+    case MOTOR_REAR_LEFT_WHEEL:
+    case MOTOR_FRONT_LEFT_WHEEL:
+    case MOTOR_MIDDLE_LEFT_WHEEL:
+      servos[i].setpoint -= dist;
+      count--;
+      break;
+    default:
+      break;
+    }
+  }
+  return count;
+}
+
+/*  Return a status that if the rover is currently moving or not.
+ * return 1 if done, 0 if any motor is still moving
+ * FIXME: will not work because motors are busted!!!
+ **/
+int check_rover_done() {
+  for (int i = 0; i < 10; i++) {
+    if (servos[i].setpoint != servos[i].counts) {
+      return 0;
+    }
+  }
+  return 1;
+}
+
+int isr_init() {
+  struct sigaction sa;
+  struct itimerval timer;
+
+  // Install the ISR
+  sa.sa_handler = (void *)isr;
+  sigemptyset(&sa.sa_mask);
+  sa.sa_flags = 0;
+  sigaction(SIGALRM, &sa, NULL);
+
+  // Set the timer to trigger every 1ms
+  timer.it_interval.tv_sec = 0;
+  timer.it_interval.tv_usec = ISR_DELAY;
+  timer.it_value.tv_sec = 0;
+  timer.it_value.tv_usec = ISR_DELAY;
+  setitimer(ITIMER_REAL, &timer, NULL);
+
+  // Handle watchdog
+  watchdog_flag = mmio_init((off_t)WATCHDOG_REG);
+
+  return 0;
+}
+
+// PID Control
+int isr() {
+  // Handle watchdog
+  *(watchdog_flag) = *(watchdog_flag) ? 0 : 1;
+
+  // Update servos
+  for (int i = 0; i < 10; i++) {
+    Servo_update(&servos[i]);
+  }
+
+  // Update the setpoitns
+  for (int i = 0; i < NUM_MOTORS; i++) {
+    servos[i].setpoint += servos[i].speed;
+  }
+
+  return 0;
+}
+
+/**
+ * @brief the rover.
+ * @return 0 on success, nonzero on failure
+ */
+int rover_init() {
+  // define servos and motors
+  off_t motor_addrs[NUM_MOTORS] = {
+      MOTOR_REAR_LEFT_WHEEL,   MOTOR_REAR_RIGHT_WHEEL,
+      MOTOR_MIDDLE_LEFT_WHEEL, MOTOR_MIDDLE_RIGHT_WHEEL,
+      MOTOR_FRONT_LEFT_WHEEL,  MOTOR_FRONT_RIGHT_WHEEL,
+      MOTOR_FRONT_LEFT_STEER,  MOTOR_FRONT_RIGHT_STEER,
+      MOTOR_REAR_LEFT_STEER,   MOTOR_REAR_RIGHT_STEER,
+
+      // MOTOR_WRIST,
+      // MOTOR_BASE,
+      // MOTOR_ELBOW,
+      // MOTOR_CLAW
+      //... more unused motors
+  };
+
+  // setup servos
+  for (int i = 0; i < 10; i++) {
+    // initializing servos
+    if (Servo_init(&servos[i], motor_addrs[i], false) != 0) {
+      printf("failed to initialize servo%d\n", i);
+      return -1;
+    }
+  }
+
+  // setup isr
+  if (isr_init() != 0) {
+    printf("failed to initialize isr\n");
+    return -1;
+  }
+  return 0;
+}
+
+/**
+ * @brief Closes out all the motor connections
+ * @return 0 on success, nonzero on failure
+ */
+int rover_close() {
+  for (int i = 0; i < 10; i++) {
+    Servo_close(&servos[i]);
+  }
+  return 0;
+}

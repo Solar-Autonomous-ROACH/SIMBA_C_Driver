@@ -1,29 +1,5 @@
-# Makefile
+main: main.o ../rover/librover.a
+	gcc -Wall -g -L../rover -o main main.o -lrover
 
-# Compiler options
-CC = gcc
-CFLAGS = -Wall -Wextra -Werror
-
-# Source files
-SRCS = main.c mmio.c pid.c motor.c servo.c
-
-# Object files
-OBJS = $(SRCS:.c=.o)
-
-# Executable file
-TARGET = test
-
-# Compile Everything
-all: $(TARGET)
-
-# Link the program
-$(TARGET): $(OBJS)
-	$(CC) $(CFLAGS) $(OBJS) -lm -o $(TARGET)
-
-# Compile the C source files
-%.o: %.c
-	$(CC) $(CFLAGS) -c $<
-
-# Remove unneeded files
-clean:
-	rm -f $(OBJS) $(TARGET)
+main.o: main.c
+	gcc -Wall -g -I ../rover -c main.c
