@@ -38,17 +38,24 @@ int motor_set_speed(off_t motor_addr, int64_t speed) {
 }
 
 /* Moves the rover forward some distance in +x and backwards in -x distance
- * dist: the distance to move in encoder positions
+ * int64_t dist: the distance to move in encoder positions
+ * FIXME: upgrade hardware encoder counters to be 64 bit
+ * double speed: the speed to move. should be between 0-255.
  * returns 0 on success, otherwise the number of motors that failed to be
- *updated
+ *updated (side effect) the motor speed stays in effect if the servos are
+ *controlled again.
  **/
-int rover_move_x(int64_t dist) {
+int rover_move_x(int64_t dist, double speed) {
   int count = 6;
   for (int i = 0; i < NUM_MOTORS; i++) {
     switch (servos[i].motor.addr) {
     case MOTOR_REAR_RIGHT_WHEEL:
     case MOTOR_FRONT_RIGHT_WHEEL:
     case MOTOR_MIDDLE_RIGHT_WHEEL:
+      // set max speed
+      servos[i].pid.outputLimitMin = -speed;
+      servos[i].pid.outputLimitMax = speed;
+      // set the distance
       servos[i].setpoint += dist;
       count--;
       break;
@@ -56,6 +63,10 @@ int rover_move_x(int64_t dist) {
     case MOTOR_REAR_LEFT_WHEEL:
     case MOTOR_FRONT_LEFT_WHEEL:
     case MOTOR_MIDDLE_LEFT_WHEEL:
+      // set max speed
+      servos[i].pid.outputLimitMin = -speed;
+      servos[i].pid.outputLimitMax = speed;
+      // set the distance
       servos[i].setpoint -= dist;
       count--;
       break;
