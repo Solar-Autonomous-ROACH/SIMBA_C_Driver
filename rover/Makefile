@@ -14,7 +14,11 @@ OBJS = $(SRCS:.c=.o)
 TARGET = rover
 
 # Compile Everything
-all: $(TARGET)
+all: $(TARGET) librover.a
+
+# Compile Library
+librover.a: $(OBJS)
+	ar r librover.a $(OBJS)
 
 # Link the program
 $(TARGET): $(OBJS)
