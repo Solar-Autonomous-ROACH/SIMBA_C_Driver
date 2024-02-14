@@ -13,10 +13,70 @@
 
 #define NUM_MOTORS 15
 #define ISR_DELAY 5000           // in usec
-#define DEFAULT_MOTOR_SPEED 1000 // in encoder positions per second
+#define DEFAULT_MOTOR_SPEED 128 // in encoder positions per second
 
 Servo servos[NUM_MOTORS];
 volatile unsigned int *watchdog_flag;
+
+int motor_calibrate(off_t motor_addr) {
+  const int TIMEOUT = 1000; // num delays before limit finding timeout
+  const int DELAY = 1000;   // usec between checks
+  const int SPEED = 64;     // speed to move the motor
+
+  // find the servo that is associated with the motor_addr
+  Servo servo;
+  for (int i = 0; i < NUM_MOTORS; i++) {
+    if (motor_addr == servos[i].motor.addr) {
+      servo = servos[i];
+      break;
+    }
+  }
+
+  int left_limit = 0;
+  int right_limit = 0;
+
+  /** Callibrate by finding both limits, and moving motor to midpoint */
+  servo.speed = SPEED;
+  // RIGHT SIDE: move the motor until the servo count stops incrementing, and mark the limit;
+  int last_pos = servo.counts;
+  int count = 0;
+  while (last_pos != servo.counts) {
+    last_pos = servo.counts;
+    usleep(DELAY);
+    count++;
+    if (count > TIMEOUT) {
+      return -1;
+    }
+  }
+  right_limit = servo.counts;
+
+  // LEFT SIDE: move the motor until the servo count stops incrementing, and mark the limit;
+  servo.speed = -1 * SPEED;
+  last_pos = servo.counts;
+  count = 0;
+  while (last_pos != servo.counts) {
+    last_pos = servo.counts;
+    usleep(DELAY);
+    count++;
+    if (count > TIMEOUT) {
+      return -1;
+    }
+  }
+  left_limit = servo.counts;
+
+  // set the midpoint
+  servo.speed = 0;
+  int midpoint = (right_limit - left_limit) / 2;
+  servo.setpoint = midpoint;
+
+  // Clear the counter
+  servo.motor.clear_enc = 1;
+  MotorController_write(&(servo.motor));
+  servo.motor.clear_enc = 0;
+  MotorController_write(&(servo.motor));
+
+  return -1;
+}
 
 /* API functions */
 /* Sets the target motor speed.
