@@ -252,7 +252,7 @@ int rover_rotate(int dir, int angle) {
   if (angle > 90 || angle < -90) {
     printf("Invalid turn angle\n");
   } else {
-    printf("Rover rotating to target angle %d\n", angle);
+    printf("Rover rotating to target angle %d and dir %d\n", angle, dir);
   }
   return 0;
 }
