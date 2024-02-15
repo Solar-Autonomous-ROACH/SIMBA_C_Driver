@@ -12,7 +12,7 @@
 #include <unistd.h>
 
 #define NUM_MOTORS 15
-#define ISR_DELAY 5000          // in usec
+#define ISR_DELAY 1000          // in usec, DO NOT CHANGE, effects PID
 #define DEFAULT_MOTOR_SPEED 128 // in encoder positions per second
 
 Servo servos[NUM_MOTORS];

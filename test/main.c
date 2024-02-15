@@ -25,7 +25,7 @@ int main() {
 
   // testing
   // motor_set_speed(MOTOR_MIDDLE_LEFT_WHEEL, 1000);
-  // rover_move_x(-10000, 128);
+  rover_move_x(-10000, 128);
   // motor_calibrate(MOTOR_FRONT_RIGHT_WHEEL);
 
   // infinite loop
