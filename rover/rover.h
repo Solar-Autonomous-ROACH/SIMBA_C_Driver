@@ -38,7 +38,7 @@
 int rover_init();
 int rover_close();
 // Calibrate the rover. Return 0 on success, nonzero on failure
-int rover_calibrate(off_t motor_addr);
+int motor_calibrate(off_t motor_addr);
 // Sets the target motor speed and runs it. Return 0 on success, nonzero on
 // failure
 int motor_set_speed(off_t motor_addr, int64_t speed);
