@@ -5,10 +5,14 @@ CC = gcc
 CFLAGS = -Wall -Wextra -Werror -g
 
 # Source files
-SRCS = main.c mmio.c pid.c motor.c servo.c rover.c
+LIBSRCS = mmio.c pid.c motor.c servo.c rover.c
+SRCS = $(LIBSRCS) main.c
 
 # Object files
 OBJS = $(SRCS:.c=.o)
+LIBOBJS = $(LIBSRCS:.c=.o)
+
+LIBNAME = librover.a
 
 # Executable file
 TARGET = rover
@@ -17,8 +21,8 @@ TARGET = rover
 all: $(TARGET) librover.a
 
 # Compile Library
-librover.a: $(OBJS)
-	ar r librover.a $(OBJS)
+$(LIBNAME): $(LIBOBJS)
+	ar r $(LIBNAME) $(LIBOBJS)
 
 # Link the program
 $(TARGET): $(OBJS)
@@ -30,4 +34,7 @@ $(TARGET): $(OBJS)
 
 # Remove unneeded files
 clean:
-	rm -f $(OBJS) $(TARGET)
+	rm -f $(OBJS)
+
+cleanall: clean
+	rm -f $(OBJS) $(TARGET) $(LIBNAME)
