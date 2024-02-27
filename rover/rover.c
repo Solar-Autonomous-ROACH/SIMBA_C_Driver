@@ -33,13 +33,18 @@ static steering_motor_t steer_RL;
  * int64_t speed: the speed to set the motor in encoder positions per second
  * Return 0 on success, nonzero on failure
  **/
-int motor_set_speed(off_t motor_addr, int64_t speed) {
+int motor_set_speed(off_t motor_addr, double speed) {
   // given the speed in counts/second, calculate how many counts per isr run
-  int counts_per_second = (double)speed * (double)(ISR_DELAY)*1e-6;
+  //double counts_per_second = (double)speed * (double)(ISR_DELAY)*1e-6;
   // find the servo that is associated with the motor_addr
   for (int i = 0; i < NUM_MOTORS; i++) {
     if (motor_addr == servos[i].motor.addr) {
-      servos[i].speed = counts_per_second;
+      //servos[i].speed = counts_per_second;
+      // set max speed
+      servos[i].pid.outputLimitMin = -speed;
+      servos[i].pid.outputLimitMax = speed;
+      // set the distance
+      servos[i].setpoint = 100000;
       return 0;
     }
   }
@@ -150,7 +155,11 @@ int isr() {
   *(watchdog_flag) = *(watchdog_flag) ? 0 : 1;
 
   // handle calibration, only one motor for now
-  steering_motor_handle_state(&steer_FR);
+  // TODO: Use FSM for rover calibration, because we cannot callibrate them all simultaneously
+  //steering_motor_handle_state(&steer_FR);
+  //steering_motor_handle_state(&steer_FL);
+  steering_motor_handle_state(&steer_RR);
+  //steering_motor_handle_state(&steer_RL);
 
   // Update servos
   for (int i = 0; i < 10; i++) {
@@ -158,9 +167,11 @@ int isr() {
   }
 
   // Update the setpoitns
+  /*    
   for (int i = 0; i < NUM_MOTORS; i++) {
     servos[i].setpoint += servos[i].speed;
   }
+  */
 
   return 0;
 }
@@ -227,6 +238,7 @@ int rover_init() {
   steering_motor_handle_state(&steer_RR);
   steering_motor_handle_state(&steer_FL);
   steering_motor_handle_state(&steer_RL);
+  
   if(count != 0){
     printf("failed to initialize steering motors\n");
     return -1;
@@ -234,6 +246,9 @@ int rover_init() {
 
   // initialize calibration
   calibrate(&steer_FR);
+  calibrate(&steer_RR);
+  calibrate(&steer_FL);
+  calibrate(&steer_RL);
 
   // setup isr
   if (isr_init() != 0) {

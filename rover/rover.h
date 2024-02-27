@@ -38,8 +38,9 @@
 int rover_init();
 int rover_close();
 // Sets the target motor speed and runs it. Return 0 on success, nonzero on
-// failure
-int motor_set_speed(off_t motor_addr, int64_t speed);
+// failur
+int motor_set_speed(off_t motor_addr, double speed);
+int64_t motor_get_position(off_t motor_addr);
 // Rover control. Return 0 on success, nonzero on failure
 int rover_move_x(int64_t distance, double speed);
 int rover_rotate(int dir, int angle);

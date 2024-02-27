@@ -17,13 +17,15 @@ void calibrate (steering_motor_t *s_motor) {
 int steering_motor_handle_state(steering_motor_t *s_motor) {
     long long current;
     long long target;
-    long long difference;
+    long long difference = 0;
+
 
     // TODO: Not defined in rover.h: This function updates the position of a motor with the given index.
     // motor_update(s_motor->index);
     Servo_update(s_motor->servo);
     switch (s_motor->state) {
         case STATE_INITIALIZE:
+            //printf("STATE_INITIALIZE\n");
             s_motor->left_pos = 0;
             s_motor->right_pos = 0;
             s_motor->center_pos = 0;
@@ -33,9 +35,11 @@ int steering_motor_handle_state(steering_motor_t *s_motor) {
             break;
 
         case STATE_WAITING:
+            //printf("STATE_WAITING\n");
             break;
 
         case STATE_CALIBRATION_LEFT:
+            //printf("STATE_CALIBRATION_LEFT\n");
             //printf("Raw: %ld\n", get_motor_position(s_motor->index));
 
             // TODO: Not defined in rover.h: Sets the Speed of the motor
@@ -46,6 +50,7 @@ int steering_motor_handle_state(steering_motor_t *s_motor) {
             // TODO: Not defined in rover.h: Gets the position of the motor
             // pos[pos_index] = get_motor_position(s_motor->index);
             pos[pos_index] = motor_get_position(s_motor->servo->motor.addr);
+            //printf("pos: %ld spinup: %ld vel: %ld\n", pos[pos_index], spinup, vel);            
 
             vel = 0;
             for(int i = 0; i < buf_size-2; i++){
@@ -91,6 +96,7 @@ int steering_motor_handle_state(steering_motor_t *s_motor) {
 
 
         case STATE_CALIBRATION_RIGHT:
+            //printf("STATE_CALIBRATION_RIGHT\n");
             // TODO: Not defined in rover.h: Sets the speed of the motor
             // set_motor_speed(s_motor->index, -CALIBRATION_SPEED);
             motor_set_speed(s_motor->servo->motor.addr, -CALIBRATION_SPEED);
@@ -117,7 +123,7 @@ int steering_motor_handle_state(steering_motor_t *s_motor) {
                     s_motor->right_pos = motor_get_position(s_motor->servo->motor.addr);
                     s_motor->state = STATE_CALIBRATION_CENTER;
 
-                    //printf("Left: %ld\t Right: %ld\t Center: %ld\t Current: %ld\n", s_motor->left_pos, s_motor->right_pos, s_motor->center_pos, get_motor_position(s_motor->index));
+                    //printf("Left: %ld\t Right: %ld\t Center: %ld\t Current: %ld\n", s_motor->left_pos, s_motor->right_pos, s_motor->center_pos, motor_get_position(s_motor->index));
 
                     s_motor->center_pos = ((s_motor->left_pos + s_motor->right_pos) >> 1);
                 }
@@ -128,6 +134,7 @@ int steering_motor_handle_state(steering_motor_t *s_motor) {
 
 
         case STATE_CALIBRATION_CENTER:
+            //printf("STATE_CALIBRATION_CENTER\n");
 
             // current = (long long)get_motor_position(s_motor->index) << 32;
             current = (long long)motor_get_position(s_motor->servo->motor.addr) << 32;
@@ -138,11 +145,11 @@ int steering_motor_handle_state(steering_motor_t *s_motor) {
             int speed = ((1 * difference)>>32) ;
             speed  = 0;
             if(difference > 1){
-                speed = 30;
+                speed = CALIBRATION_SPEED;
                 // set_motor_speed(s_motor->index, speed );
                 motor_set_speed(s_motor->servo->motor.addr, speed);
             }else if(difference < -1){
-                speed = -30;
+                speed = -CALIBRATION_SPEED;
                 // set_motor_speed(s_motor->index, speed );
                 motor_set_speed(s_motor->servo->motor.addr, speed);
             } else {
@@ -154,16 +161,17 @@ int steering_motor_handle_state(steering_motor_t *s_motor) {
             break;
 
         case STATE_READY:
+            //printf("STATE_READY\n");
             // current = get_motor_position(s_motor->index);
             current = motor_get_position(s_motor->servo->motor.addr);
             target = s_motor->target;
             difference = target - current;
             if(difference > 1){
                 // set_motor_speed(s_motor->index, 30 );
-                motor_set_speed(s_motor->servo->motor.addr, 30);
+                motor_set_speed(s_motor->servo->motor.addr, CALIBRATION_SPEED);
             }else if(difference < -1){
                 // set_motor_speed(s_motor->index, -30 );
-                motor_set_speed(s_motor->servo->motor.addr, -30);
+                motor_set_speed(s_motor->servo->motor.addr, -CALIBRATION_SPEED);
             } else {
                 // set_motor_speed(s_motor->index, 0 );
                 motor_set_speed(s_motor->servo->motor.addr, 0);

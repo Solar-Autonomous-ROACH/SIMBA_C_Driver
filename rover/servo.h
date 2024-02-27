@@ -20,7 +20,7 @@ typedef struct {
   int64_t counts;
   int16_t prevCounts;
   bool inverted;
-  int64_t speed;
+  double speed;
 } Servo;
 
 int Servo_init(Servo *servo, off_t mmio_address, bool inverted);

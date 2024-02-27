@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include "servo.h"
 
-#define CALIBRATION_SPEED 3000//was 30
+#define CALIBRATION_SPEED 100//was 30
 
  typedef enum {
     STATE_INITIALIZE,
