@@ -2,9 +2,10 @@
 #define C_STEERING_MOTOR_H
 
 #include <stdint.h>
-#include "rover.h"
+#include <stdio.h>
+#include "servo.h"
 
-#define CALIBRATION_SPEED 30
+#define CALIBRATION_SPEED 3000//was 30
 
  typedef enum {
     STATE_INITIALIZE,
@@ -16,7 +17,10 @@
 } state_t;
 
 typedef struct {
+    // legacy
     uint8_t index;
+    // replaces index
+    Servo* servo;
     long left_pos;
     long right_pos;
     long center_pos;

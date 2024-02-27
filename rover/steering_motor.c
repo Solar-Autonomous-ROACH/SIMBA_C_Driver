@@ -1,4 +1,6 @@
 #include "steering_motor.h"
+#include "rover.h"
+#include "servo.h"
 
 #define buf_size 20
 
@@ -18,7 +20,8 @@ int steering_motor_handle_state(steering_motor_t *s_motor) {
     long long difference;
 
     // TODO: Not defined in rover.h: This function updates the position of a motor with the given index.
-    motor_update(s_motor->index);
+    // motor_update(s_motor->index);
+    Servo_update(s_motor->servo);
     switch (s_motor->state) {
         case STATE_INITIALIZE:
             s_motor->left_pos = 0;
@@ -36,11 +39,13 @@ int steering_motor_handle_state(steering_motor_t *s_motor) {
             //printf("Raw: %ld\n", get_motor_position(s_motor->index));
 
             // TODO: Not defined in rover.h: Sets the Speed of the motor
-            set_motor_speed(s_motor->index, CALIBRATION_SPEED);
+            // set_motor_speed(s_motor->index, CALIBRATION_SPEED);
+            motor_set_speed(s_motor->servo->motor.addr, CALIBRATION_SPEED);
 
             //printf("Raw: %d\n", get_raw_pos(s_motor->index));
             // TODO: Not defined in rover.h: Gets the position of the motor
-            pos[pos_index] = get_motor_position(s_motor->index);
+            // pos[pos_index] = get_motor_position(s_motor->index);
+            pos[pos_index] = motor_get_position(s_motor->servo->motor.addr);
 
             vel = 0;
             for(int i = 0; i < buf_size-2; i++){
@@ -73,7 +78,8 @@ int steering_motor_handle_state(steering_motor_t *s_motor) {
                 if(spinup < 1 ) {
                     if (vel < 1) {
                         // TODO: Not defined in rover.h: Gets the position of the motor
-                        s_motor->left_pos = get_motor_position(s_motor->index);;
+                        // s_motor->left_pos = get_motor_position(s_motor->index);;
+                        s_motor->left_pos = motor_get_position(s_motor->servo->motor.addr);
                         s_motor->state = STATE_CALIBRATION_RIGHT;
                         spinup = 50;
                         //printf("left: %ld,\n", s_motor->left_pos);
@@ -86,9 +92,11 @@ int steering_motor_handle_state(steering_motor_t *s_motor) {
 
         case STATE_CALIBRATION_RIGHT:
             // TODO: Not defined in rover.h: Sets the speed of the motor
-            set_motor_speed(s_motor->index, -CALIBRATION_SPEED);
+            // set_motor_speed(s_motor->index, -CALIBRATION_SPEED);
+            motor_set_speed(s_motor->servo->motor.addr, -CALIBRATION_SPEED);
             // TODO: Not defined in rover.h: Gets the position of the motor
-            pos[pos_index] = get_motor_position(s_motor->index);
+            // pos[pos_index] = get_motor_position(s_motor->index);
+            pos[pos_index] = motor_get_position(s_motor->servo->motor.addr);
 
             vel = 0;
             for(int i = 0; i < buf_size-2; i++){
@@ -102,9 +110,11 @@ int steering_motor_handle_state(steering_motor_t *s_motor) {
             if(spinup < 1 ) {
                 if (vel > -1) {
                     // TODO: Not defined in rover.h: Sets the speed of the motor
-                    set_motor_speed(s_motor->index, 0);
+                    // set_motor_speed(s_motor->index, 0);
+                    motor_set_speed(s_motor->servo->motor.addr, 0);
                     // TODO: Not defined in rover.h: Gets the position of the motor
-                    s_motor->right_pos = get_motor_position(s_motor->index);;
+                    // s_motor->right_pos = get_motor_position(s_motor->index);
+                    s_motor->right_pos = motor_get_position(s_motor->servo->motor.addr);
                     s_motor->state = STATE_CALIBRATION_CENTER;
 
                     //printf("Left: %ld\t Right: %ld\t Center: %ld\t Current: %ld\n", s_motor->left_pos, s_motor->right_pos, s_motor->center_pos, get_motor_position(s_motor->index));
@@ -119,35 +129,44 @@ int steering_motor_handle_state(steering_motor_t *s_motor) {
 
         case STATE_CALIBRATION_CENTER:
 
-            current = (long long)get_motor_position(s_motor->index) << 32;
+            // current = (long long)get_motor_position(s_motor->index) << 32;
+            current = (long long)motor_get_position(s_motor->servo->motor.addr) << 32;
             target = ((long long) s_motor->center_pos) << 32;
-            set_target_position(s_motor->index, target);
+            // TODO: Not defined in rover.h: Sets the target position of the motor. Remove for now?
+            // set_target_position(s_motor->index, target);
             difference = target - current;
             int speed = ((1 * difference)>>32) ;
             speed  = 0;
             if(difference > 1){
                 speed = 30;
-                set_motor_speed(s_motor->index, speed );
+                // set_motor_speed(s_motor->index, speed );
+                motor_set_speed(s_motor->servo->motor.addr, speed);
             }else if(difference < -1){
                 speed = -30;
-                set_motor_speed(s_motor->index, speed );
+                // set_motor_speed(s_motor->index, speed );
+                motor_set_speed(s_motor->servo->motor.addr, speed);
             } else {
                 s_motor->target = s_motor->center_pos;
-                set_motor_speed(s_motor->index, 0 );
+                // set_motor_speed(s_motor->index, 0 );
+                motor_set_speed(s_motor->servo->motor.addr, 0);
                 s_motor->state = STATE_READY;
             }
             break;
 
         case STATE_READY:
-            current = get_motor_position(s_motor->index);
+            // current = get_motor_position(s_motor->index);
+            current = motor_get_position(s_motor->servo->motor.addr);
             target = s_motor->target;
             difference = target - current;
             if(difference > 1){
-                set_motor_speed(s_motor->index, 30 );
+                // set_motor_speed(s_motor->index, 30 );
+                motor_set_speed(s_motor->servo->motor.addr, 30);
             }else if(difference < -1){
-                set_motor_speed(s_motor->index, -30 );
+                // set_motor_speed(s_motor->index, -30 );
+                motor_set_speed(s_motor->servo->motor.addr, -30);
             } else {
-                set_motor_speed(s_motor->index, 0 );
+                // set_motor_speed(s_motor->index, 0 );
+                motor_set_speed(s_motor->servo->motor.addr, 0);
             }
             break;
 

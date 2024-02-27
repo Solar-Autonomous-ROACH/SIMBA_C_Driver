@@ -3,6 +3,7 @@
 #include "isr.h"
 #include "mmio.h"
 #include "servo.h"
+#include "steering_motor.h"
 
 #include <math.h>
 #include <signal.h>
@@ -15,70 +16,16 @@
 #define ISR_DELAY 1000          // in usec, DO NOT CHANGE, effects PID
 #define DEFAULT_MOTOR_SPEED 128 // in encoder positions per second
 
+// TODO: try making static to put in rover.h
 Servo servos[NUM_MOTORS];
 volatile unsigned int *watchdog_flag;
 
-int motor_calibrate(off_t motor_addr) {
-  const int TIMEOUT = 1000; // num delays before limit finding timeout
-  const int DELAY = 1000;   // usec between checks
-  const int SPEED = 64;     // speed to move the motor
+// should move this to rover.h
+static steering_motor_t steer_FR;
 
-  // find the servo that is associated with the motor_addr
-  Servo *servo;
-  for (int i = 0; i < NUM_MOTORS; i++) {
-    if (motor_addr == servos[i].motor.addr) {
-      servo = &servos[i];
-      break;
-    }
-  }
-
-  int left_limit = 0;
-  int right_limit = 0;
-
-  /** Callibrate by finding both limits, and moving motor to midpoint */
-  servo->speed = SPEED;
-  // RIGHT SIDE: move the motor until the servo count stops incrementing, and
-  // mark the limit;
-  int last_pos = servo->counts;
-  int count = 0;
-  while (last_pos != servo->counts) {
-    last_pos = servo->counts;
-    usleep(DELAY);
-    count++;
-    if (count > TIMEOUT) {
-      return -1;
-    }
-  }
-  right_limit = servo->counts;
-
-  // LEFT SIDE: move the motor until the servo count stops incrementing, and
-  // mark the limit;
-  servo->speed = -1 * SPEED;
-  last_pos = servo->counts;
-  count = 0;
-  while (last_pos != servo->counts) {
-    last_pos = servo->counts;
-    usleep(DELAY);
-    count++;
-    if (count > TIMEOUT) {
-      return -1;
-    }
-  }
-  left_limit = servo->counts;
-
-  // set the midpoint
-  servo->speed = 0;
-  int midpoint = (right_limit - left_limit) / 2;
-  servo->setpoint = midpoint;
-
-  // Clear the counter
-  servo->motor.clear_enc = 1;
-  MotorController_write(&(servo->motor));
-  servo->motor.clear_enc = 0;
-  MotorController_write(&(servo->motor));
-
-  return -1;
-}
+static steering_motor_t steer_RR;
+static steering_motor_t steer_FL;
+static steering_motor_t steer_RL;
 
 /* API functions */
 /* Sets the target motor speed.
@@ -99,6 +46,28 @@ int motor_set_speed(off_t motor_addr, int64_t speed) {
   return -1;
 }
 
+/* Get the current position of the motor
+ * Sets the target motor speed.
+ * off_t motor_addr: the motor address defined in rover.h
+ * Return the current position of the motor in encoder counts
+ **/
+int64_t motor_get_position(off_t motor_addr) {
+  for (int i = 0; i < NUM_MOTORS; i++) {
+    if (motor_addr == servos[i].motor.addr) {
+      return servos[i].counts;
+    }
+  }
+  return -1;
+}
+/* Calibrate the rover
+ * Return 0 on success, nonzero on failure
+*/
+int rover_calibrate() {
+  // TODO: complete, for now just calibrate one motor
+  // calibrate the first motor
+  calibrate(&steer_FR);
+  return 0;
+}
 /* Moves the rover forward some distance in +x and backwards in -x distance
  * int64_t dist: the distance to move in encoder positions
  * FIXME: upgrade hardware encoder counters to be 64 bit
@@ -180,6 +149,9 @@ int isr() {
   // Handle watchdog
   *(watchdog_flag) = *(watchdog_flag) ? 0 : 1;
 
+  // handle calibration, only one motor for now
+  steering_motor_handle_state(&steer_FR);
+
   // Update servos
   for (int i = 0; i < 10; i++) {
     Servo_update(&servos[i]);
@@ -221,6 +193,47 @@ int rover_init() {
       return -1;
     }
   }
+
+  // handle calibration
+  uint8_t count = 4;
+  for (int i = 0; i < NUM_MOTORS; i++) {
+    switch (servos[i].motor.addr) {
+      case MOTOR_FRONT_LEFT_STEER:
+        steer_FL.servo = &servos[i];
+        steer_FL.state = STATE_INITIALIZE;
+        count--;
+        break;
+      case MOTOR_FRONT_RIGHT_STEER:
+        steer_FR.servo = &servos[i];
+        steer_FR.state = STATE_INITIALIZE;
+        count--;
+        break;
+      case MOTOR_REAR_LEFT_STEER:
+        steer_RL.servo = &servos[i];
+        steer_RL.state = STATE_INITIALIZE;
+        count--;
+        break;
+      case MOTOR_REAR_RIGHT_STEER:
+        steer_RR.servo = &servos[i];
+        steer_RR.state = STATE_INITIALIZE;
+        count--;
+        break;
+      default:
+        break;
+    }
+  }
+  // check if all motors are initialized
+  steering_motor_handle_state(&steer_FR);
+  steering_motor_handle_state(&steer_RR);
+  steering_motor_handle_state(&steer_FL);
+  steering_motor_handle_state(&steer_RL);
+  if(count != 0){
+    printf("failed to initialize steering motors\n");
+    return -1;
+  }
+
+  // initialize calibration
+  calibrate(&steer_FR);
 
   // setup isr
   if (isr_init() != 0) {
