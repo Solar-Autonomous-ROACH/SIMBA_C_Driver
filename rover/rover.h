@@ -33,10 +33,24 @@
 #define MOTOR_17 0x80100000
 */
 
+typedef enum {
+    ROVER_CALIBRATE_WAITING,
+    ROVER_CALIBRATE_FR,
+    ROVER_CALIBRATE_RR,
+    ROVER_CALIBRATE_FL,
+    ROVER_CALIBRATE_RL,
+    ROVER_CALIBRATE_READY
+} rover_state_t;
+
+static rover_state_t rover_state;
+
 /* API functions */
 // Initializes the rover. Return 0 on success, nonzero on failure
 int rover_init();
 int rover_close();
+// calibration
+void rover_calibrate();
+int rover_is_calibrated();
 // Sets the target motor speed and runs it. Return 0 on success, nonzero on
 // failur
 int motor_set_speed(off_t motor_addr, double speed);

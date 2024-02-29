@@ -64,15 +64,7 @@ int64_t motor_get_position(off_t motor_addr) {
   }
   return -1;
 }
-/* Calibrate the rover
- * Return 0 on success, nonzero on failure
-*/
-int rover_calibrate() {
-  // TODO: complete, for now just calibrate one motor
-  // calibrate the first motor
-  calibrate(&steer_FR);
-  return 0;
-}
+
 /* Moves the rover forward some distance in +x and backwards in -x distance
  * int64_t dist: the distance to move in encoder positions
  * FIXME: upgrade hardware encoder counters to be 64 bit
@@ -156,10 +148,13 @@ int isr() {
 
   // handle calibration, only one motor for now
   // TODO: Use FSM for rover calibration, because we cannot callibrate them all simultaneously
-  //steering_motor_handle_state(&steer_FR);
-  //steering_motor_handle_state(&steer_FL);
-  steering_motor_handle_state(&steer_RR);
-  //steering_motor_handle_state(&steer_RL);
+  if ( rover_is_calibrated() == false ) {
+    rover_calibrate();
+    steering_motor_handle_state(&steer_FR);
+    steering_motor_handle_state(&steer_FL);
+    steering_motor_handle_state(&steer_RR);
+    steering_motor_handle_state(&steer_RL);
+  }
 
   // Update servos
   for (int i = 0; i < 10; i++) {
@@ -188,11 +183,6 @@ int rover_init() {
       MOTOR_FRONT_LEFT_WHEEL,  MOTOR_FRONT_RIGHT_WHEEL,
       MOTOR_FRONT_LEFT_STEER,  MOTOR_FRONT_RIGHT_STEER,
       MOTOR_REAR_LEFT_STEER,   MOTOR_REAR_RIGHT_STEER,
-
-      // MOTOR_WRIST,
-      // MOTOR_BASE,
-      // MOTOR_ELBOW,
-      // MOTOR_CLAW
       //... more unused motors
   };
 
@@ -233,22 +223,19 @@ int rover_init() {
         break;
     }
   }
+  if(count != 0){
+    printf("failed to initialize steering motors\n");
+    return -1;
+  }
+
   // check if all motors are initialized
   steering_motor_handle_state(&steer_FR);
   steering_motor_handle_state(&steer_RR);
   steering_motor_handle_state(&steer_FL);
   steering_motor_handle_state(&steer_RL);
   
-  if(count != 0){
-    printf("failed to initialize steering motors\n");
-    return -1;
-  }
-
   // initialize calibration
-  calibrate(&steer_FR);
-  calibrate(&steer_RR);
-  calibrate(&steer_FL);
-  calibrate(&steer_RL);
+  rover_state = ROVER_CALIBRATE_WAITING;
 
   // setup isr
   if (isr_init() != 0) {
@@ -256,6 +243,51 @@ int rover_init() {
     return -1;
   }
   return 0;
+}
+
+int rover_is_calibrated() {
+    return rover_state == ROVER_CALIBRATE_READY;
+}
+
+/**
+ * @brief Calibrates every motor iteratively
+ * @return 0 on success, nonzero on failure
+ */
+void rover_calibrate(){
+    switch (rover_state) {
+        case ROVER_CALIBRATE_WAITING:
+            calibrate(&steer_FR);
+            rover_state = ROVER_CALIBRATE_FR;
+            break;
+        case ROVER_CALIBRATE_FR:
+            if (steering_motor_handle_state(&steer_FR)) {
+                calibrate(&steer_RR);
+                rover_state = ROVER_CALIBRATE_RR;
+            }
+            break;
+        case ROVER_CALIBRATE_RR:
+            if (steering_motor_handle_state(&steer_RR)) {
+                calibrate(&steer_FL);
+                rover_state = ROVER_CALIBRATE_FL;
+            }
+            break;
+        case ROVER_CALIBRATE_FL:
+            if (steering_motor_handle_state(&steer_FL)) {
+                calibrate(&steer_RL);
+                rover_state = ROVER_CALIBRATE_RL;
+            }
+            break;
+        case ROVER_CALIBRATE_RL:
+            if (steering_motor_handle_state(&steer_RL)){
+                //rover_steer_forward();
+                rover_state = ROVER_CALIBRATE_READY;
+            }
+            break;
+        case ROVER_CALIBRATE_READY:
+            break;
+        default:
+            break;
+    }
 }
 
 /**
