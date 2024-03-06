@@ -19,10 +19,10 @@
 // TODO: try making static to put in rover.h
 Servo servos[NUM_MOTORS];
 volatile unsigned int *watchdog_flag;
+static rover_state_t rover_state;
 
 // should move this to rover.h
 static steering_motor_t steer_FR;
-
 static steering_motor_t steer_RR;
 static steering_motor_t steer_FL;
 static steering_motor_t steer_RL;
@@ -110,12 +110,103 @@ int rover_move_x(int64_t dist, double speed) {
  * FIXME: will not work because motors are busted!!!
  **/
 int check_rover_done() {
-  for (int i = 0; i < 10; i++) {
-    if (servos[i].setpoint != servos[i].counts) {
-      return 0;
-    }
-  }
-  return 1;
+    int64_t current = motor_get_position(steer_FR.servo->motor.addr);
+    if(steer_FR.target == current) return 1;
+    return 0;    
+}
+
+/* UNTESTED */
+void rover_update_steering(){
+    steering_motor_handle_state(&steer_FR);
+    steering_motor_handle_state(&steer_RR);
+    steering_motor_handle_state(&steer_FL);
+    steering_motor_handle_state(&steer_RL);
+}
+
+/* UNTESTED */
+void rover_stop(){
+    motor_set_speed(FRW, 0);
+    motor_set_speed(RRW, 0);
+    motor_set_speed(FLW, 0);
+    motor_set_speed(RLW, 0);
+	motor_set_speed(MRW, 0);
+    motor_set_speed(MLW, 0);
+}
+
+/* UNTESTED */
+void rover_forward(int speed){
+    motor_set_speed(FRW, -speed);
+    motor_set_speed(MRW, -speed);
+    motor_set_speed(RRW, -speed);
+    motor_set_speed(FLW, speed);
+    motor_set_speed(MLW, speed);
+    motor_set_speed(RLW, speed);
+}
+
+/* UNTESTED */
+void rover_reverse(int speed){
+    motor_set_speed(FRW, speed);
+    motor_set_speed(MRW, speed);
+    motor_set_speed(RRW, speed);
+    motor_set_speed(FLW, -speed);
+    motor_set_speed(MLW, -speed);
+    motor_set_speed(RLW, -speed);
+}
+
+/* UNTESTED */
+void rover_pointTurn_CW(int speed){
+    motor_set_speed(FRW, speed);
+    motor_set_speed(MRW, speed);
+    motor_set_speed(RRW, speed);
+    motor_set_speed(FLW, speed);
+    motor_set_speed(MLW, speed);
+    motor_set_speed(RLW, speed);
+}
+
+/* UNTESTED */
+void rover_pointTurn_CCW(int speed){
+    motor_set_speed(FRW, -speed);
+    motor_set_speed(MRW, -speed);
+    motor_set_speed(RRW, -speed);
+    motor_set_speed(FLW, -speed);
+    motor_set_speed(MLW, -speed);
+    motor_set_speed(RLW, -speed);
+}
+
+/* UNTESTED */
+void rover_steer_forward(){
+    steer_FR.target = steer_FR.center_pos + 0;
+	steer_FL.target = steer_FL.center_pos + 0;
+    steer_RR.target = steer_RR.center_pos + 0;
+    steer_RL.target = steer_RL.center_pos + 0;
+}
+
+/* UNTESTED */
+void rover_steer_right(int angle){
+    if(angle >  MAX_STEERING_TICKS) angle =    MAX_STEERING_TICKS;
+    if(angle < -MAX_STEERING_TICKS) angle =   -MAX_STEERING_TICKS;
+    steer_FR.target = steer_FR.center_pos + angle;
+    steer_RR.target = steer_RR.center_pos - angle;
+    steer_FL.target = steer_FL.center_pos + angle;
+    steer_RL.target = steer_RL.center_pos - angle;
+}
+
+/* UNTESTED */
+void rover_steer_left(int angle){
+    if(angle >  MAX_STEERING_TICKS) angle =  MAX_STEERING_TICKS;
+    if(angle < -MAX_STEERING_TICKS) angle = -MAX_STEERING_TICKS;
+    steer_FR.target = steer_FR.center_pos -  angle;
+    steer_RR.target = steer_RR.center_pos +  angle;
+    steer_FL.target = steer_FL.center_pos -  angle;
+    steer_RL.target = steer_RL.center_pos +  angle;
+}
+
+/* UNTESTED */
+void rover_steer_point(){
+	steer_FR.target = steer_FR.center_pos - MAX_STEERING_TICKS;
+    steer_RR.target = steer_RR.center_pos + MAX_STEERING_TICKS;
+    steer_FL.target = steer_FL.center_pos + MAX_STEERING_TICKS;
+    steer_RL.target = steer_RL.center_pos - MAX_STEERING_TICKS;
 }
 
 int isr_init() {
@@ -147,26 +238,13 @@ int isr() {
   *(watchdog_flag) = *(watchdog_flag) ? 0 : 1;
 
   // handle calibration, only one motor for now
-  // TODO: Use FSM for rover calibration, because we cannot callibrate them all simultaneously
-  if ( rover_is_calibrated() == false ) {
-    rover_calibrate();
-    steering_motor_handle_state(&steer_FR);
-    steering_motor_handle_state(&steer_FL);
-    steering_motor_handle_state(&steer_RR);
-    steering_motor_handle_state(&steer_RL);
-  }
+  if ( rover_is_calibrated() == false ) rover_calibrate();
 
+  // Update the steering
+  rover_update_steering();
+ 
   // Update servos
-  for (int i = 0; i < 10; i++) {
-    Servo_update(&servos[i]);
-  }
-
-  // Update the setpoitns
-  /*    
-  for (int i = 0; i < NUM_MOTORS; i++) {
-    servos[i].setpoint += servos[i].speed;
-  }
-  */
+  for (int i = 0; i < 10; i++) Servo_update(&servos[i]);
 
   return 0;
 }
