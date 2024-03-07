@@ -343,13 +343,9 @@ int rover_init() {
   // initialize calibration
   rover_state = ROVER_CALIBRATE_WAITING;
 
-  // setup isr
-  if (isr_init() != 0) {
-    printf("failed to initialize isr\n");
-    return -1;
-    if (isr_attach_function(rover_isr) != 0) {
-      return 1;
-    }
+  if (isr_attach_function(rover_isr) != 0) {
+    fprintf(stderr, "Failed to attach rover_isr\n");
+    return 1;
   }
   return 0;
 }
