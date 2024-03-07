@@ -1,6 +1,4 @@
 #include "steering_motor.h"
-#include "rover.h"
-#include "servo.h"
 
 #define buf_size 20
 
@@ -50,7 +48,7 @@ int steering_motor_handle_state(steering_motor_t *s_motor) {
             // TODO: Not defined in rover.h: Gets the position of the motor
             // pos[pos_index] = get_motor_position(s_motor->index);
             pos[pos_index] = motor_get_position(s_motor->servo->motor.addr);
-            //printf("pos: %ld spinup: %ld vel: %ld\n", pos[pos_index], spinup, vel);            
+            //printf("pos: %ld spinup: %ld vel: %ld\n", pos[pos_index], spinup, vel);
 
             vel = 0;
             for(int i = 0; i < buf_size-2; i++){

@@ -3,6 +3,8 @@
 
 #include <stdint.h>
 #include <stdio.h>
+
+#include "rover.h"
 #include "servo.h"
 
 #define CALIBRATION_SPEED 100//was 30

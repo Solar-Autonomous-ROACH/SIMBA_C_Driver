@@ -1,6 +1,3 @@
-#include <aio.h>
-
-#include "mmio.h"
 #include "motor.h"
 
 int MotorController_init(MotorController *motor, off_t mmio_address) {

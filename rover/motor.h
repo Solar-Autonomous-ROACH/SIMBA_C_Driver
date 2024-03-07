@@ -4,6 +4,8 @@
 #include <aio.h>
 #include <stdint.h>
 
+#include "mmio.h"
+
 typedef struct {
 
   // MMIO

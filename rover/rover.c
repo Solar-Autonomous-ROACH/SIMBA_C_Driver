@@ -1,16 +1,5 @@
 // Rover Control API
 #include "rover.h"
-#include "mmio.h"
-#include "servo.h"
-#include "steering_motor.h"
-
-#include <math.h>
-#include <signal.h>
-#include <stdbool.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <sys/time.h>
-#include <unistd.h>
 
 #define NUM_MOTORS 15
 #define ISR_DELAY 1000          // in usec, DO NOT CHANGE, effects PID

@@ -2,11 +2,22 @@
 #ifndef ROVER_H
 #define ROVER_H
 
+#include <math.h>
+#include <signal.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <sys/time.h>
+#include <unistd.h>
+#include <stdlib.h>
+
 /** include to make accessible in library */
 #include "mmio.h"
 #include "motor.h"
 
-#include <stdlib.h>
+#include "servo.h"
+#include "steering_motor.h"
+
 /* Define the Rover's Motors */
 #define MOTOR_REAR_RIGHT_STEER (0x80000000)
 #define RRS (MOTOR_REAR_RIGHT_STEER)

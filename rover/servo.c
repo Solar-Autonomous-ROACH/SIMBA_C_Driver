@@ -1,11 +1,3 @@
-#include <aio.h>
-#include <math.h>
-#include <stdbool.h>
-#include <stdint.h>
-#include <stdio.h>
-
-#include "motor.h"
-#include "pid.h"
 #include "servo.h"
 
 int Servo_init(Servo *servo, off_t mmio_address, bool inverted) {
