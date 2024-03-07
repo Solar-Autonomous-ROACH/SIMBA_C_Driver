@@ -14,7 +14,7 @@ int MotorController_init(MotorController *motor, off_t mmio_address) {
   motor->mmio = mmio;
   motor->addr = mmio_address;
   motor->duty_cycle = 0;
-  motor->clk_divisor = 4;
+  motor->clk_divisor = 2;
   motor->dir = 1;
   motor->en_motor = 1;
   motor->clear_enc = 1;

@@ -3,4 +3,6 @@ venv
 *.bin
 *.hwh
 *.o
-roverCore
+librover.a
+rover/rover
+test/main

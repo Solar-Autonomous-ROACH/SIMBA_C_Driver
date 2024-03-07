@@ -23,6 +23,10 @@ int main() {
     printf("failed to initialize rover\n");
     return -1;
   }
+  if (isr_init() != 0) {
+    printf("failed to initialize rover\n");
+    return -1;
+  }
 
   // testing
   // motor_set_speed(MOTOR_MIDDLE_LEFT_WHEEL, 1000);
