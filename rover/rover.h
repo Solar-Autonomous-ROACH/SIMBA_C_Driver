@@ -2,8 +2,11 @@
 #ifndef ROVER_H
 #define ROVER_H
 
-#include <stdlib.h>
+/** include to make accessible in library */
+#include "mmio.h"
+#include "motor.h"
 
+#include <stdlib.h>
 /* Define the Rover's Motors */
 #define MOTOR_REAR_RIGHT_STEER (0x80000000)
 #define RRS (MOTOR_REAR_RIGHT_STEER)
@@ -36,6 +39,9 @@
 #define MOTOR_CLAW 0x800D0000
 
 #define WATCHDOG_REG 0x80100000
+
+#define ROVER_ROTATE_CLOCKWISE 0
+#define ROVER_ROTATE_COUNTER 1
 
 /*
 #define MOTOR_15 0x800E0000
@@ -84,6 +90,7 @@ void rover_steer_point();
 int check_rover_done();
 /* for isr */
 int isr_init();
-int isr();
+void rover_isr();
+int isr_attach_function(void (*fun)());
 
 #endif

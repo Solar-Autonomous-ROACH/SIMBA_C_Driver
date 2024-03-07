@@ -22,21 +22,24 @@ int main() {
     printf("failed to initialize rover\n");
     return -1;
   }
-  
-  // wait for callibration to finish
-  printf("calibrating...\n");
-  while (rover_is_calibrated() == false) {}
-  printf("done\n");
+  if (isr_init() != 0) {
+    printf("failed to initialize rover\n");
+    return -1;
+  }
 
   // testing
   rover_steer_right(300);
-  while( check_rover_done() == 0 && done == false){};
+  while (check_rover_done() == 0 && done == false) {
+  };
   rover_steer_left(300);
-  while( check_rover_done() == 0 && done == false){};
+  while (check_rover_done() == 0 && done == false) {
+  };
   rover_steer_forward();
-  while( check_rover_done() == 0 && done == false){};
+  while (check_rover_done() == 0 && done == false) {
+  };
   rover_steer_point();
-  while( check_rover_done() == 0 && done == false){};
+  while (check_rover_done() == 0 && done == false) {
+  };
   rover_pointTurn_CW(128);
 
   // infinite loop
