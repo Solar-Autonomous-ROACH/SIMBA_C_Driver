@@ -350,8 +350,8 @@ int rover_init() {
     if (isr_attach_function(rover_isr) != 0) {
       return 1;
     }
-    return 0;
   }
+  return 0;
 }
 
 int rover_rotate(int dir, int angle) {
