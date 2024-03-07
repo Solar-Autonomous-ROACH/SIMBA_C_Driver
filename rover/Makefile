@@ -5,7 +5,7 @@ CC = gcc
 CFLAGS = -Wall -Wextra -Werror -g
 
 # Source files
-LIBSRCS = mmio.c pid.c motor.c servo.c rover.c steering_motor.c
+LIBSRCS = mmio.c pid.c motor.c servo.c rover.c steering_motor.c isr.c
 SRCS = $(LIBSRCS) main.c
 
 # Object files

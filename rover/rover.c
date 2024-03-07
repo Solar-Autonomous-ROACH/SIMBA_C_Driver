@@ -2,16 +2,13 @@
 #include "rover.h"
 
 #define NUM_MOTORS 15
-#define ISR_DELAY 1000          // in usec, DO NOT CHANGE, effects PID
 #define DEFAULT_MOTOR_SPEED 128 // in encoder positions per second
-#define ISR_MAX_FUNCS 10 // maximum number of functions to be attached to isr
 
 /** Functions not exposed in header */
 void isr(int signum __attribute__((unused)));
 
 // TODO: try making static to put in rover.h
 Servo servos[NUM_MOTORS];
-volatile unsigned int *watchdog_flag;
 static rover_state_t rover_state;
 
 // should move this to rover.h
@@ -19,9 +16,6 @@ static steering_motor_t steer_FR;
 static steering_motor_t steer_RR;
 static steering_motor_t steer_FL;
 static steering_motor_t steer_RL;
-/** isr globals */
-void (*isr_functions[ISR_MAX_FUNCS])(); // Array of ISR function pointers:
-unsigned isr_num_functions;
 
 /* API functions */
 /* Sets the target motor speed.
@@ -29,6 +23,7 @@ unsigned isr_num_functions;
  * int64_t speed: the speed to set the motor in encoder positions per second
  * Return 0 on success, nonzero on failure
  **/
+// TODO: move to different file
 int motor_set_speed(off_t motor_addr, double speed) {
   // given the speed in counts/second, calculate how many counts per isr run
   // double counts_per_second = (double)speed * (double)(ISR_DELAY)*1e-6;
@@ -52,6 +47,7 @@ int motor_set_speed(off_t motor_addr, double speed) {
  * off_t motor_addr: the motor address defined in rover.h
  * Return the current position of the motor in encoder counts
  **/
+// TODO: move to different file
 int64_t motor_get_position(off_t motor_addr) {
   for (int i = 0; i < NUM_MOTORS; i++) {
     if (motor_addr == servos[i].motor.addr) {
@@ -69,6 +65,7 @@ int64_t motor_get_position(off_t motor_addr) {
  *updated (side effect) the motor speed stays in effect if the servos are
  *controlled again.
  **/
+// TODO: deprecated
 int rover_move_x(int64_t dist, double speed) {
   int count = 6;
   for (int i = 0; i < NUM_MOTORS; i++) {
@@ -112,7 +109,6 @@ int check_rover_done() {
   return 0;
 }
 
-/* UNTESTED */
 void rover_update_steering() {
   steering_motor_handle_state(&steer_FR);
   steering_motor_handle_state(&steer_RR);
@@ -120,7 +116,6 @@ void rover_update_steering() {
   steering_motor_handle_state(&steer_RL);
 }
 
-/* UNTESTED */
 void rover_stop() {
   motor_set_speed(FRW, 0);
   motor_set_speed(RRW, 0);
@@ -130,7 +125,6 @@ void rover_stop() {
   motor_set_speed(MLW, 0);
 }
 
-/* UNTESTED */
 void rover_forward(int speed) {
   motor_set_speed(FRW, -speed);
   motor_set_speed(MRW, -speed);
@@ -140,7 +134,6 @@ void rover_forward(int speed) {
   motor_set_speed(RLW, speed);
 }
 
-/* UNTESTED */
 void rover_reverse(int speed) {
   motor_set_speed(FRW, speed);
   motor_set_speed(MRW, speed);
@@ -150,7 +143,6 @@ void rover_reverse(int speed) {
   motor_set_speed(RLW, -speed);
 }
 
-/* UNTESTED */
 void rover_pointTurn_CW(int speed) {
   motor_set_speed(FRW, speed);
   motor_set_speed(MRW, speed);
@@ -160,7 +152,6 @@ void rover_pointTurn_CW(int speed) {
   motor_set_speed(RLW, speed);
 }
 
-/* UNTESTED */
 void rover_pointTurn_CCW(int speed) {
   motor_set_speed(FRW, -speed);
   motor_set_speed(MRW, -speed);
@@ -170,7 +161,6 @@ void rover_pointTurn_CCW(int speed) {
   motor_set_speed(RLW, -speed);
 }
 
-/* UNTESTED */
 void rover_steer_forward() {
   steer_FR.target = steer_FR.center_pos + 0;
   steer_FL.target = steer_FL.center_pos + 0;
@@ -178,7 +168,6 @@ void rover_steer_forward() {
   steer_RL.target = steer_RL.center_pos + 0;
 }
 
-/* UNTESTED */
 void rover_steer_right(int angle) {
   if (angle > MAX_STEERING_TICKS)
     angle = MAX_STEERING_TICKS;
@@ -190,7 +179,6 @@ void rover_steer_right(int angle) {
   steer_RL.target = steer_RL.center_pos - angle;
 }
 
-/* UNTESTED */
 void rover_steer_left(int angle) {
   if (angle > MAX_STEERING_TICKS)
     angle = MAX_STEERING_TICKS;
@@ -202,7 +190,6 @@ void rover_steer_left(int angle) {
   steer_RL.target = steer_RL.center_pos + angle;
 }
 
-/* UNTESTED */
 void rover_steer_point() {
   steer_FR.target = steer_FR.center_pos - MAX_STEERING_TICKS;
   steer_RR.target = steer_RR.center_pos + MAX_STEERING_TICKS;
@@ -210,40 +197,7 @@ void rover_steer_point() {
   steer_RL.target = steer_RL.center_pos - MAX_STEERING_TICKS;
 }
 
-int isr_init() {
-  struct sigaction sa;
-  struct itimerval timer;
-
-  // Install the ISR
-  sa.sa_handler = (void *)isr;
-  sigemptyset(&sa.sa_mask);
-  sa.sa_flags = 0;
-  sigaction(SIGALRM, &sa, NULL);
-
-  // Set the timer to trigger every 1ms
-  timer.it_interval.tv_sec = 0;
-  timer.it_interval.tv_usec = ISR_DELAY;
-  timer.it_value.tv_sec = 0;
-  timer.it_value.tv_usec = ISR_DELAY;
-  setitimer(ITIMER_REAL, &timer, NULL);
-
-  // Handle watchdog
-  watchdog_flag = mmio_init((off_t)WATCHDOG_REG);
-
-  return 0;
-}
-
-// PID Control
-void isr(int signum __attribute__((unused))) {
-  // Handle watchdog
-  *(watchdog_flag) = *(watchdog_flag) ? 0 : 1;
-
-  // handle calibration, only one motor for now
-  for (unsigned i = 0; i < isr_num_functions; i++) {
-    isr_functions[i]();
-  }
-}
-
+// TODO: move to different file
 void rover_isr() {
   // Update servos
   if (rover_is_calibrated() == false)

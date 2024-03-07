@@ -17,6 +17,7 @@
 
 #include "servo.h"
 #include "steering_motor.h"
+#include "isr.h"
 
 /* Define the Rover's Motors */
 #define MOTOR_REAR_RIGHT_STEER (0x80000000)
