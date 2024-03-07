@@ -27,6 +27,9 @@ int main() {
     return -1;
   }
 
+  // wait for calibration to finish
+  while (rover_is_calibrated() == false){}
+
   // testing
   rover_steer_right(300);
   while (check_rover_done() == 0 && done == false) {
