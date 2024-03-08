@@ -51,6 +51,15 @@
 
 #define MAX_STEERING_TICKS      300
 
+/* For Motion*/
+#define WHEEL_DIAMETER 124     /* mm diameter of the wheel*/
+/*this is for the 6 wheel motors*/
+#define TICKS_PER_REV_6 12                /*ticks per revolution*/
+#define GEAR_RATIO_6 116
+/*this is for the 4 rotating motors*/
+#define TICKS_PER_REV_4 40                /*ticks per revolution*/
+#define GEAR_RATIO_4 172
+
 typedef enum {
     ROVER_CALIBRATE_WAITING,
     ROVER_CALIBRATE_FR,
@@ -72,7 +81,7 @@ int rover_is_calibrated();
 int motor_set_speed(off_t motor_addr, double speed);
 int64_t motor_get_position(off_t motor_addr);
 // Rover control. Return 0 on success, nonzero on failure
-//int rover_move_x(int64_t distance, double speed);
+int rover_move_x(int distance, double speed);
 //int rover_rotate(int dir, int angle);
 void rover_stop();
 void rover_forward(int speed);

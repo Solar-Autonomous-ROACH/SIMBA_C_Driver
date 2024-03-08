@@ -72,15 +72,32 @@ int64_t motor_get_position(off_t motor_addr) {
   return -1;
 }
 
+/* Convert encoder ticks to distance
+ * long ticks: the number of encoder ticks
+ * Return the distance in mm
+ **/
+long ticks_to_distance(long ticks){
+    long distance = (ticks / TICKS_PER_REV_6) * (WHEEL_DIAMETER * M_PI / GEAR_RATIO_6);
+    return distance;
+}
+
+/* Convert distance to encoder ticks
+ * long distance: the distance in mm
+ * Return the number of encoder ticks
+ **/
+int distance_to_ticks(int distance){
+    return (distance * TICKS_PER_REV_6) / (WHEEL_DIAMETER * M_PI / GEAR_RATIO_6);
+}
+
 /* Moves the rover forward some distance in +x and backwards in -x distance
- * int64_t dist: the distance to move in encoder positions
- * FIXME: upgrade hardware encoder counters to be 64 bit
+ * int dist: the distance to move in mm
  * double speed: the speed to move. should be between 0-255.
  * returns 0 on success, otherwise the number of motors that failed to be
  *updated (side effect) the motor speed stays in effect if the servos are
  *controlled again.
  **/
-int rover_move_x(int64_t dist, double speed) {
+int rover_move_x(int dist, double speed) {
+  long dist_tics = distance_to_ticks(dist);
   int count = 6;
   for (int i = 0; i < NUM_MOTORS; i++) {
     switch (servos[i].motor.addr) {
@@ -91,7 +108,7 @@ int rover_move_x(int64_t dist, double speed) {
       servos[i].pid.outputLimitMin = -speed;
       servos[i].pid.outputLimitMax = speed;
       // set the distance
-      servos[i].setpoint += dist;
+      servos[i].setpoint += dist_tics;
       count--;
       break;
     // inverted motors.
@@ -102,7 +119,7 @@ int rover_move_x(int64_t dist, double speed) {
       servos[i].pid.outputLimitMin = -speed;
       servos[i].pid.outputLimitMax = speed;
       // set the distance
-      servos[i].setpoint -= dist;
+      servos[i].setpoint -= dist_tics;
       count--;
       break;
     default:
@@ -117,9 +134,15 @@ int rover_move_x(int64_t dist, double speed) {
  * FIXME: will not work because motors are busted!!!
  **/
 int check_rover_done() {
-  int64_t current = motor_get_position(steer_FR.servo->motor.addr);
-  if (steer_FR.target == current)
-    return 1;
+  int64_t current_FR = motor_get_position(steer_FR.servo->motor.addr);
+  int64_t current_FL = motor_get_position(steer_FR.servo->motor.addr);
+  int64_t current_RR = motor_get_position(steer_FR.servo->motor.addr);
+  int64_t current_RL = motor_get_position(steer_FR.servo->motor.addr);
+
+  if (steer_FR.target == current_FR) return 1;
+  if (steer_FL.target == current_FL) return 1;
+  if (steer_RR.target == current_RR) return 1;
+  if (steer_RL.target == current_RL) return 1;
   return 0;
 }
 
