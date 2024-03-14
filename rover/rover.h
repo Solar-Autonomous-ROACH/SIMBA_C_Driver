@@ -80,7 +80,7 @@ void rover_calibrate();
 int rover_is_calibrated();
 // Sets the target motor speed and runs it. Return 0 on success, nonzero on
 // failur
-int motor_set_speed(off_t motor_addr, double speed);
+int motor_set_speed(off_t motor_addr, int speed);
 int64_t motor_get_position(off_t motor_addr);
 // Rover control. Return 0 on success, nonzero on failure
 /* Convert encoder ticks to distance

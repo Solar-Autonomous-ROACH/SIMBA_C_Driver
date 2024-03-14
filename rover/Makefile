@@ -34,7 +34,7 @@ $(TARGET): $(OBJS)
 
 # Remove unneeded files
 clean:
-	rm -f $(OBJS)
+	rm -f $(OBJS) $(TARGET) $(LIBNAME)
 
 cleanall: clean
 	rm -f $(OBJS) $(TARGET) $(LIBNAME)

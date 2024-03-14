@@ -3,6 +3,7 @@
 #include "mmio.h"
 #include "servo.h"
 #include "steering_motor.h"
+#include "pid.h"
 
 #include <math.h>
 #include <signal.h>
@@ -40,7 +41,7 @@ unsigned isr_num_functions;
  * int64_t speed: the speed to set the motor in encoder positions per second
  * Return 0 on success, nonzero on failure
  **/
-int motor_set_speed(off_t motor_addr, double speed) {
+int motor_set_speed(off_t motor_addr, int speed) {
   // given the speed in counts/second, calculate how many counts per isr run
   // double counts_per_second = (double)speed * (double)(ISR_DELAY)*1e-6;
   // find the servo that is associated with the motor_addr
@@ -108,7 +109,7 @@ int rover_move_x(int dist, double speed) {
       servos[i].pid.outputLimitMin = -speed;
       servos[i].pid.outputLimitMax = speed;
       // set the distance
-      servos[i].setpoint += dist_tics;
+      servos[i].setpoint = servos[i].counts - dist_tics;
       count--;
       break;
     // inverted motors.
@@ -119,7 +120,7 @@ int rover_move_x(int dist, double speed) {
       servos[i].pid.outputLimitMin = -speed;
       servos[i].pid.outputLimitMax = speed;
       // set the distance
-      servos[i].setpoint -= dist_tics;
+      servos[i].setpoint = servos[i].counts + dist_tics;
       count--;
       break;
     default:
@@ -134,16 +135,35 @@ int rover_move_x(int dist, double speed) {
  * FIXME: will not work because motors are busted!!!
  **/
 int check_rover_done() {
+  /* buffer size for encoder positions */
+  int buffer = 2;
+  /* for steering motors */
   int64_t current_FR = motor_get_position(steer_FR.servo->motor.addr);
-  int64_t current_FL = motor_get_position(steer_FR.servo->motor.addr);
-  int64_t current_RR = motor_get_position(steer_FR.servo->motor.addr);
-  int64_t current_RL = motor_get_position(steer_FR.servo->motor.addr);
-
-  if (steer_FR.target == current_FR) return 1;
-  if (steer_FL.target == current_FL) return 1;
-  if (steer_RR.target == current_RR) return 1;
-  if (steer_RL.target == current_RL) return 1;
-  return 0;
+  int64_t current_FL = motor_get_position(steer_FL.servo->motor.addr);
+  int64_t current_RR = motor_get_position(steer_RR.servo->motor.addr);
+  int64_t current_RL = motor_get_position(steer_RL.servo->motor.addr);
+  
+  if (steer_FR.target < current_FR - buffer || steer_FR.target > current_FR + buffer) return 0;
+  if (steer_FL.target < current_FL - buffer || steer_FL.target > current_FL + buffer) return 0;
+  if (steer_RR.target < current_RR - buffer || steer_RR.target > current_RR + buffer) return 0;
+  if (steer_RL.target < current_RL - buffer || steer_RL.target > current_RL + buffer) return 0;
+  
+  /* for wheels */ 
+  for (int i = 0; i < NUM_MOTORS; i++) {
+    switch (servos[i].motor.addr) {
+    	case MOTOR_REAR_RIGHT_WHEEL:
+    	case MOTOR_FRONT_RIGHT_WHEEL:
+    	case MOTOR_MIDDLE_RIGHT_WHEEL:
+    	//TODO: fix bad encoder case MOTOR_REAR_LEFT_WHEEL:
+    	case MOTOR_FRONT_LEFT_WHEEL:
+    	case MOTOR_MIDDLE_LEFT_WHEEL:
+      	    if (servos[i].counts < servos[i].setpoint - buffer || servos[i].counts > servos[i].setpoint + buffer) return 0;
+	break;
+    default:
+      break;
+    }
+  }
+  return 1;
 }
 
 /* UNTESTED */
@@ -162,6 +182,22 @@ void rover_stop() {
   motor_set_speed(RLW, 0);
   motor_set_speed(MRW, 0);
   motor_set_speed(MLW, 0);
+  /* clear setpoints from set_speed */
+  for (int i = 0; i < NUM_MOTORS; i++) {
+    switch (servos[i].motor.addr) {
+    	case MOTOR_REAR_RIGHT_WHEEL:
+    	case MOTOR_FRONT_RIGHT_WHEEL:
+    	case MOTOR_MIDDLE_RIGHT_WHEEL:
+    	case MOTOR_REAR_LEFT_WHEEL:
+    	case MOTOR_FRONT_LEFT_WHEEL:
+    	case MOTOR_MIDDLE_LEFT_WHEEL:
+	servos[i].setpoint = servos[i].counts;	
+	break;
+    default:
+      break;
+    }
+  }
+ 
 }
 
 /* UNTESTED */
