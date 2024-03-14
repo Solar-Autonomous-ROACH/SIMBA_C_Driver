@@ -32,21 +32,18 @@ int main() {
   while (rover_is_calibrated() == false && done == false){}
   printf("done.\n");
 
-  // testing
-  rover_steer_left(300);
-  while (check_rover_done() == 0 && done == false) {
-  };
-  printf("done\n");
 
-  rover_move_x(100, 1000);
-  while (check_rover_done() == 0 && done == false) {
-  };
-  printf("done\n");
- 
-  rover_steer_forward();
-  while (check_rover_done() == 0 && done == false) {
-  };
-  printf("done\n");
+  printf("moving forward!\n");
+  rover_forward(128);
+  while(done == false){};
+  done = false;
+  rover_stop();
+  printf("done moving forward\n");
+
+  
+  printf("waiting for rover to be done\n");
+  while(check_rover_done() == false && done == false){};
+  printf("rover is \n");
 
   // infinite loop
   while (done == false) {

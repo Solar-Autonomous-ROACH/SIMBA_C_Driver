@@ -21,6 +21,7 @@ typedef struct {
   int16_t prevCounts;
   bool inverted;
   double speed;
+  bool speed_controlled;
 } Servo;
 
 int Servo_init(Servo *servo, off_t mmio_address, bool inverted);

@@ -52,7 +52,8 @@ int motor_set_speed(off_t motor_addr, int speed) {
       servos[i].pid.outputLimitMin = -speed;
       servos[i].pid.outputLimitMax = speed;
       // set the distance
-      servos[i].setpoint = 100000;
+      //servos[i].setpoint = 100000;
+      servos[i].speed_controlled = true;
       return 0;
     }
   }
@@ -143,10 +144,22 @@ int check_rover_done() {
   int64_t current_RR = motor_get_position(steer_RR.servo->motor.addr);
   int64_t current_RL = motor_get_position(steer_RL.servo->motor.addr);
   
-  if (steer_FR.target < current_FR - buffer || steer_FR.target > current_FR + buffer) return 0;
-  if (steer_FL.target < current_FL - buffer || steer_FL.target > current_FL + buffer) return 0;
-  if (steer_RR.target < current_RR - buffer || steer_RR.target > current_RR + buffer) return 0;
-  if (steer_RL.target < current_RL - buffer || steer_RL.target > current_RL + buffer) return 0;
+  if (current_FR < steer_FR.target - buffer || current_FR > steer_FR.target + buffer ) {
+	  //printf("steer_FR target: %d, current FR: %ld\n", steer_FR.target, current_FR);
+	  return 0;
+  }
+  if (current_FL < steer_FL.target - buffer || current_FL > steer_FL.target + buffer ) {
+	  //printf("steer_FL target: %d, current FL: %ld\n", steer_FL.target, current_FL);
+	  return 0;
+  }
+  if (current_RR < steer_RR.target - buffer || current_RR > steer_RR.target + buffer ) {
+	  //printf("steer_RR target: %d, current RR: %ld\n", steer_RR.target, current_RR);
+	  return 0;
+  }
+  if (current_RL < steer_RL.target - buffer || current_RL > steer_RL.target + buffer ) {
+	  //printf("steer_RL target: %d, current RL: %ld\n", steer_RL.target, current_RL);
+	  return 0;
+  }
   
   /* for wheels */ 
   for (int i = 0; i < NUM_MOTORS; i++) {
@@ -157,7 +170,10 @@ int check_rover_done() {
     	//TODO: fix bad encoder case MOTOR_REAR_LEFT_WHEEL:
     	case MOTOR_FRONT_LEFT_WHEEL:
     	case MOTOR_MIDDLE_LEFT_WHEEL:
-      	    if (servos[i].counts < servos[i].setpoint - buffer || servos[i].counts > servos[i].setpoint + buffer) return 0;
+      	    if (servos[i].counts < (long)(servos[i].setpoint) - buffer || servos[i].counts > (long)(servos[i].setpoint) + buffer ) {
+		    //printf("servo %d, counts: %ld, setpoint: %ld\n", i, servos[i].counts, (long)(servos[i].setpoint));
+		    return 0;
+	    }
 	break;
     default:
       break;
@@ -176,22 +192,34 @@ void rover_update_steering() {
 
 /* UNTESTED */
 void rover_stop() {
-  motor_set_speed(FRW, 0);
+  
+  /*motor_set_speed(FRW, 0);
   motor_set_speed(RRW, 0);
   motor_set_speed(FLW, 0);
   motor_set_speed(RLW, 0);
   motor_set_speed(MRW, 0);
   motor_set_speed(MLW, 0);
+  */
   /* clear setpoints from set_speed */
   for (int i = 0; i < NUM_MOTORS; i++) {
     switch (servos[i].motor.addr) {
     	case MOTOR_REAR_RIGHT_WHEEL:
     	case MOTOR_FRONT_RIGHT_WHEEL:
     	case MOTOR_MIDDLE_RIGHT_WHEEL:
-    	case MOTOR_REAR_LEFT_WHEEL:
+    	//servos[i].setpoint = servos[i].counts;	
+	motor_set_speed(servos[i].motor.addr, 128);
+	servos[i].speed_controlled = false;
+	servos[i].setpoint = servos[i].counts - 10;
+	Servo_update(&(servos[i]));
+	break;
+	case MOTOR_REAR_LEFT_WHEEL:
     	case MOTOR_FRONT_LEFT_WHEEL:
     	case MOTOR_MIDDLE_LEFT_WHEEL:
-	servos[i].setpoint = servos[i].counts;	
+	//servos[i].setpoint = servos[i].counts;	
+	motor_set_speed(servos[i].motor.addr, 128);
+	servos[i].speed_controlled = false;
+	servos[i].setpoint = servos[i].counts - 10;
+	Servo_update(&(servos[i]));
 	break;
     default:
       break;
