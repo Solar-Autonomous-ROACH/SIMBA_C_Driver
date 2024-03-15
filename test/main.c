@@ -26,10 +26,24 @@ int main() {
     printf("failed to initialize rover\n");
     return -1;
   }
+  
+  printf("calibrating...\n");
+  // wait for calibration to finish
+  while (rover_is_calibrated() == false && done == false){}
+  printf("done.\n");
 
-  // testing
-  // motor_set_speed(MOTOR_MIDDLE_LEFT_WHEEL, 1000);
-  rover_move_x(-10000, 128);
+
+  printf("moving forward!\n");
+  rover_forward(128);
+  while(done == false){};
+  done = false;
+  rover_stop();
+  printf("done moving forward\n");
+
+  
+  printf("waiting for rover to be done\n");
+  while(check_rover_done() == false && done == false){};
+  printf("rover is \n");
 
   // infinite loop
   while (done == false) {

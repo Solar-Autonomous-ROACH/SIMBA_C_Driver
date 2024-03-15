@@ -5,7 +5,7 @@ CC = gcc
 CFLAGS = -Wall -Wextra -Werror -g
 
 # Source files
-LIBSRCS = mmio.c pid.c motor.c servo.c rover.c
+LIBSRCS = mmio.c pid.c motor.c servo.c rover.c steering_motor.c
 SRCS = $(LIBSRCS) main.c
 
 # Object files
@@ -34,7 +34,7 @@ $(TARGET): $(OBJS)
 
 # Remove unneeded files
 clean:
-	rm -f $(OBJS)
+	rm -f $(OBJS) $(TARGET) $(LIBNAME)
 
 cleanall: clean
 	rm -f $(OBJS) $(TARGET) $(LIBNAME)

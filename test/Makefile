@@ -3,3 +3,6 @@ main: main.o ../rover/librover.a
 
 main.o: main.c
 	gcc -Wall -g -I ../rover -c main.c
+
+clean:
+	rm -f main.o

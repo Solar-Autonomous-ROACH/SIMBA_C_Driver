@@ -23,7 +23,7 @@ int Servo_init(Servo *servo, off_t mmio_address, bool inverted) {
   (servo->pid).outputLimitMax = 255.0;
   (servo->pid).integratorLimitMin = -20.0;
   (servo->pid).integratorLimitMax = 20.0;
-  (servo->pid).sampleTime = 0.005; // ISR delay?
+  (servo->pid).sampleTime = 0.001; // ISR delay? was 0.005
   PIDController_init(&(servo->pid));
 
   // Initialize control variables
@@ -33,6 +33,7 @@ int Servo_init(Servo *servo, off_t mmio_address, bool inverted) {
   // FIXME: inverted servo motor functionality does not work with pid
   servo->inverted = inverted;
   servo->speed = 0;
+  servo->speed_controlled = false;
   return 0;
 }
 
@@ -48,7 +49,13 @@ void Servo_update(Servo *servo) {
   servo->prevCounts = (servo->motor).counts;
 
   // Compute control signal
-  PIDController_update(&(servo->pid), servo->setpoint, (double)servo->counts);
+  if (servo->speed_controlled) {
+    // Compute control signa
+    PIDController_update(&(servo->pid), (double)servo->counts + 10000, (double)servo->counts);
+  }
+  else {
+    PIDController_update(&(servo->pid), servo->setpoint, (double)servo->counts);
+  }
 
   // Apply control signal
   (servo->motor).dir = (servo->pid).output >= 0 ? 0 : 1;
